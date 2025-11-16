@@ -45,7 +45,7 @@ func TestApplyTemplateE2E(t *testing.T) {
 		Org:         testOrg,
 		ProjectName: projectName,
 		IssuesRepo:  testRepo,
-		Template:    filepath.Join(testTemplate),
+		Template:    filepath.Join(repoRoot(t), testTemplate),
 	}
 
 	if err := apply.Apply(opts, client); err != nil {
@@ -121,4 +121,22 @@ func runGhCommand(t *testing.T, args ...string) string {
 		t.Fatalf("gh %v failed: %v\n%s", args, err, string(output))
 	}
 	return string(output)
+}
+
+func repoRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("go.mod not found above %s", dir)
+		}
+		dir = parent
+	}
 }
