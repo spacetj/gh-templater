@@ -2,7 +2,9 @@ package template
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -34,7 +36,14 @@ type TemplateIssue struct {
 // The parser is a focused implementation that supports the subset of YAML used by the built-in templates
 // (maps, lists, and block scalars).
 func Load(path string) (Template, error) {
-	content, err := os.ReadFile(path)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return Template{}, fmt.Errorf("resolve template path: %w", err)
+	}
+	dir := filepath.Dir(absPath)
+	file := filepath.Base(absPath)
+
+	content, err := fs.ReadFile(os.DirFS(dir), file)
 	if err != nil {
 		return Template{}, fmt.Errorf("read template: %w", err)
 	}
