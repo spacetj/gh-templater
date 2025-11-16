@@ -107,3 +107,28 @@ func TestCreateIssue(t *testing.T) {
 		t.Fatalf("expected 1 command, got %d", len(runner.calls))
 	}
 }
+
+func TestEnsureLabelCreatesWhenMissing(t *testing.T) {
+	runner := &fakeRunner{
+		errs: map[int]error{
+			1: errors.New("HTTP 404: Not Found"),
+		},
+	}
+	client := NewCLIClient(runner)
+	if err := client.EnsureLabel("acme/repo", "spec", "#ABCDEF", "desc"); err != nil {
+		t.Fatalf("ensure label failed: %v", err)
+	}
+	if len(runner.calls) != 2 {
+		t.Fatalf("expected PATCH + POST, got %d", len(runner.calls))
+	}
+	found := false
+	for _, arg := range runner.calls[1].args {
+		if arg == "color=abcdef" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected sanitized color in create call: %+v", runner.calls[1].args)
+	}
+}

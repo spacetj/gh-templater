@@ -32,6 +32,7 @@ func applyCmd(args []string) {
 	project := fs.String("project", "", "Name for the new GitHub project")
 	issuesRepo := fs.String("issues-repo", "", "owner/repo that will receive milestones and issues")
 	templatePath := fs.String("template", "", "Path to the YAML template to apply")
+	sectionsFlag := fs.String("sections", "all", "Comma-separated sections to apply (project,labels,milestones,issues or 'all')")
 
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -44,8 +45,14 @@ func applyCmd(args []string) {
 		os.Exit(1)
 	}
 
+	sections, err := apply.ParseSections(*sectionsFlag)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	client := github.NewCLIClient(runner.ExecRunner{})
-	opts := apply.Options{Org: *org, ProjectName: *project, IssuesRepo: *issuesRepo, Template: *templatePath}
+	opts := apply.Options{Org: *org, ProjectName: *project, IssuesRepo: *issuesRepo, Template: *templatePath, Sections: sections}
 	if err := apply.Apply(opts, client); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

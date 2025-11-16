@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/github/gh-templater/internal/runner"
@@ -16,6 +17,7 @@ type Client interface {
 	CreateMilestone(repo string, milestoneTitle, description, dueOn string) error
 	CreateIssue(repo string, issue TemplateIssueWithResolvedMilestone) (string, error)
 	AddItemToProject(owner string, projectNumber int, itemURL string) error
+	EnsureLabel(repo, name, color, description string) error
 }
 
 // TemplateIssueWithResolvedMilestone includes milestone information after validation.
@@ -200,4 +202,43 @@ func (c *CLIClient) lookupUserID(owner string) (string, error) {
 		return "", fmt.Errorf("%w: %s", errUserNotFound, owner)
 	}
 	return parsed.Data.User.ID, nil
+}
+
+func (c *CLIClient) EnsureLabel(repo, name, color, description string) error {
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("label name is required")
+	}
+	color = sanitizeColor(color)
+	path := fmt.Sprintf("repos/%s/labels/%s", repo, url.PathEscape(name))
+	args := []string{"api", path, "--method", "PATCH", "-f", "name=" + name, "-f", "color=" + color}
+	if strings.TrimSpace(description) != "" {
+		args = append(args, "--raw-field", "description="+description)
+	}
+	if _, err := c.runner.Run("gh", args...); err != nil {
+		if !isNotFound(err) {
+			return fmt.Errorf("update label %q: %w", name, err)
+		}
+		createArgs := []string{"api", fmt.Sprintf("repos/%s/labels", repo), "--method", "POST", "-f", "name=" + name, "-f", "color=" + color}
+		if strings.TrimSpace(description) != "" {
+			createArgs = append(createArgs, "--raw-field", "description="+description)
+		}
+		if _, err := c.runner.Run("gh", createArgs...); err != nil {
+			return fmt.Errorf("create label %q: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func sanitizeColor(color string) string {
+	trimmed := strings.TrimSpace(color)
+	trimmed = strings.TrimPrefix(trimmed, "#")
+	if trimmed == "" {
+		return "ededed"
+	}
+	return strings.ToLower(trimmed)
+}
+
+func isNotFound(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "Not Found") || strings.Contains(msg, "status 404")
 }

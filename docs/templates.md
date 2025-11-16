@@ -1,7 +1,7 @@
 # Template schema
 
 Templates describe everything needed to stand up a GitHub Project and its execution backlog. Each file is a YAML document
-with three sections: `readme`, `milestones`, and `issues`.
+with optional sections for `readme`, `labels`, `milestones`, and `issues`.
 
 The built-in parser supports the YAML constructs used in the example files (maps, lists, and `|` block scalars). Keep
 indentation consistent—two spaces for nested fields works best.
@@ -12,14 +12,16 @@ indentation consistent—two spaces for nested fields works best.
 | --- | --- | --- | --- |
 | `name` | string | No | Human-friendly template name. |
 | `readme` | string | No | Markdown that becomes the Project README. Leave blank to skip. |
+| `labels` | list | No | Repository labels to ensure before creating issues. Each entry supports `name`, optional `color` (hex, with or without `#`), and optional `description`. |
 | `milestones` | list | No | Milestones created in the issues repository. Each milestone includes `title`, optional `description`, and optional ISO8601 `due_on`. |
 | `issues` | list | No | Issues created in the issues repository. Each issue includes `title`, `body`, optional `labels`, optional `milestone` (must match a milestone title), and optional `assignees`. |
 
 ## Authoring tips
 - Keep `readme` focused on the project mission, milestones, and definition of done.
-- Use `labels` to pre-triage workstreams (e.g., `backend`, `infra`, `docs`).
+- Use `labels` to pre-triage workstreams (e.g., `backend`, `infra`, `docs`) or to sync custom palettes—include `color` and `description` when authoring templates.
 - Use multi-line `body` blocks for rich checklists and links to external docs.
 - `milestone` names referenced by issues must match the milestone titles exactly; the extension will fail fast if not.
+- Use `--sections` when running `gh templater apply` to select which parts run (any combination of `project`, `labels`, `milestones`, `issues`).
 
 ## Examples
 - [`templates/backend-grpc.yaml`](../templates/backend-grpc.yaml): production-ready Go gRPC service.

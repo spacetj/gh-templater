@@ -14,8 +14,16 @@ var userHomeDir = os.UserHomeDir
 type Template struct {
 	Name       string
 	Readme     string
+	Labels     []TemplateLabel
 	Milestones []TemplateMilestone
 	Issues     []TemplateIssue
+}
+
+// TemplateLabel defines a repository label that should exist before creating issues.
+type TemplateLabel struct {
+	Name        string
+	Color       string
+	Description string
 }
 
 // TemplateMilestone defines a milestone blueprint for the repository.
@@ -94,6 +102,12 @@ func (y *yamlSubset) parse() (Template, error) {
 				return Template{}, err
 			}
 			tpl.Readme = readme
+		case strings.HasPrefix(line, "labels:"):
+			labels, err := y.parseLabelList()
+			if err != nil {
+				return Template{}, err
+			}
+			tpl.Labels = labels
 		case strings.HasPrefix(line, "milestones:"):
 			items, err := y.parseList()
 			if err != nil {
@@ -175,6 +189,65 @@ func (y *yamlSubset) parseList() ([]TemplateMilestone, error) {
 		milestones = append(milestones, item)
 	}
 	return milestones, nil
+}
+
+func (y *yamlSubset) parseLabelList() ([]TemplateLabel, error) {
+	var labels []TemplateLabel
+outer:
+	for y.next() {
+		line := y.current()
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, "  -") && !strings.HasPrefix(line, "-") {
+			y.pos--
+			break
+		}
+		label := TemplateLabel{}
+	forLoop:
+		for {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "- ") {
+				if label.Name != "" || label.Color != "" || label.Description != "" {
+					y.pos--
+					break forLoop
+				}
+				parts := strings.SplitN(strings.TrimPrefix(trimmed, "- "), ":", 2)
+				if len(parts) == 2 && strings.TrimSpace(parts[0]) == "name" {
+					label.Name = cleanScalar(parts[1])
+				}
+			} else if strings.HasPrefix(trimmed, "name:") {
+				label.Name = cleanScalar(strings.TrimPrefix(trimmed, "name:"))
+			} else if strings.HasPrefix(trimmed, "color:") {
+				label.Color = cleanScalar(strings.TrimPrefix(trimmed, "color:"))
+			} else if strings.HasPrefix(trimmed, "description:") {
+				label.Description = cleanScalar(strings.TrimPrefix(trimmed, "description:"))
+			}
+
+			if !y.next() {
+				break forLoop
+			}
+			line = y.current()
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			if !strings.HasPrefix(line, "    ") && !strings.HasPrefix(line, "  ") {
+				y.pos--
+				break forLoop
+			}
+		}
+		labels = append(labels, label)
+		if y.pos >= len(y.lines) {
+			break outer
+		}
+	}
+	return labels, nil
+}
+
+func cleanScalar(value string) string {
+	s := strings.TrimSpace(value)
+	s = strings.Trim(s, "\"'")
+	return s
 }
 
 func (y *yamlSubset) parseIssueList() ([]TemplateIssue, error) {

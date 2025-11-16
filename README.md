@@ -29,14 +29,26 @@ graph LR
      --org your-org \
      --project "Platform Readiness" \
      --issues-repo your-org/roadmap \
-    --template templates/backend-grpc.yaml
-  ```
+     --template templates/backend-grpc.yaml
+   ```
+
+Add `--sections` to run a subset of the workflow (choose from `project`, `labels`, `milestones`, `issues`). For example, to only ensure labels and issues run:
+
+```bash
+gh templater apply \
+  --org your-org \
+  --project "Existing Project" \
+  --issues-repo your-org/roadmap \
+  --template templates/backend-grpc.yaml \
+  --sections labels,issues
+```
 
 The command will:
-- 🚧 Create a GitHub Project (Projects v2) under the org you specify.
+- 🚧 Create or update a GitHub Project (Projects v2) under the org you specify (when `project` is selected).
+- 🏷️ Ensure repo labels match the template (when `labels` is selected).
+- 🎯 Create milestones and issues in the target repository (when `milestones`/`issues` are selected).
 - 📘 Apply the template README content to the project.
-- 🎯 Create milestones and issues in the target repository.
-- 📌 Add each issue to the new project automatically.
+- 📌 Add each issue to the new project automatically when both `project` and `issues` are selected.
 
 ## 🤖 Automate with GitHub Actions
 
@@ -59,13 +71,17 @@ gh workflow run Apply-Project-Template \
 > ℹ️ Secrets are resolved at runtime—no PAT ever appears in the workflow inputs or logs unless echoed explicitly.
 
 ## 🧾 Template format
-Templates are YAML files that describe the project README, milestones, and issues. A minimal example:
+Templates are YAML files that describe the project README, labels, milestones, and issues. A minimal example:
 
 ```yaml
 name: Reliability Sprint
 readme: |
   # Reliability Sprint
   Tracking our availability goals.
+labels:
+  - name: spec
+    color: 9B59B6
+    description: Spec-driven work
 milestones:
   - title: Hardening
     description: Improve error budgets
@@ -76,7 +92,7 @@ issues:
     milestone: Hardening
 ```
 
-See [`docs/templates.md`](docs/templates.md) for the full schema and extension-specific tips.
+See [`docs/templates.md`](docs/templates.md) for the full schema, including how to scope runs with `--sections`.
 
 ## 🧰 Commands
 
