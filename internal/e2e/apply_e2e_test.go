@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -63,40 +64,10 @@ func TestApplyTemplateE2E(t *testing.T) {
 
 func lookupProjectID(t *testing.T, projectName string) string {
 	t.Helper()
-	const query = `query($login:String!, $search:String!) {
-	  organization(login:$login) {
-	    projectsV2(first: 20, query: $search) {
-	      nodes { id title number }
-	    }
-	  }
-	}`
-	output := runGhCommand(t, "api", "graphql",
-		"-f", fmt.Sprintf("query=%s", query),
-		"-F", fmt.Sprintf("login=%s", testOrg),
-		"-F", fmt.Sprintf("search=%s", projectName),
-	)
-
-	var resp struct {
-		Data struct {
-			Organization struct {
-				Projects struct {
-					Nodes []struct {
-						ID    string `json:"id"`
-						Title string `json:"title"`
-					} `json:"nodes"`
-				} `json:"projectsV2"`
-			} `json:"organization"`
-		} `json:"data"`
+	if id := queryProjects(t, "organization", projectName); id != "" {
+		return id
 	}
-	if err := json.Unmarshal([]byte(output), &resp); err != nil {
-		t.Fatalf("parse project query: %v", err)
-	}
-	for _, node := range resp.Data.Organization.Projects.Nodes {
-		if node.Title == projectName {
-			return node.ID
-		}
-	}
-	return ""
+	return queryProjects(t, "user", projectName)
 }
 
 func deleteProject(t *testing.T, projectID string) {
@@ -112,15 +83,87 @@ func deleteProject(t *testing.T, projectID string) {
 	)
 }
 
+func queryProjects(t *testing.T, ownerType, projectName string) string {
+	t.Helper()
+	query := fmt.Sprintf(`query($login:String!, $search:String!) {
+  %s(login:$login) {
+    projectsV2(first: 20, query: $search) {
+      nodes { id title number }
+    }
+  }
+}`, ownerType)
+
+	output, err := runGhCommandAllowError("api", "graphql",
+		"-f", fmt.Sprintf("query=%s", query),
+		"-F", fmt.Sprintf("login=%s", testOrg),
+		"-F", fmt.Sprintf("search=%s", projectName),
+	)
+	if err != nil {
+		if strings.Contains(err.Error(), "Could not resolve to an Organization") || strings.Contains(err.Error(), "Could not resolve to a User") {
+			return ""
+		}
+		t.Fatalf("project lookup failed: %v", err)
+	}
+
+	type node struct {
+		ID    string `json:"id"`
+		Title string `json:"title"`
+	}
+	var resp struct {
+		Data struct {
+			Organization *struct {
+				Projects struct {
+					Nodes []node `json:"nodes"`
+				} `json:"projectsV2"`
+			} `json:"organization"`
+			User *struct {
+				Projects struct {
+					Nodes []node `json:"nodes"`
+				} `json:"projectsV2"`
+			} `json:"user"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		t.Fatalf("parse project query: %v", err)
+	}
+
+	var nodes []node
+	switch ownerType {
+	case "organization":
+		if resp.Data.Organization != nil {
+			nodes = resp.Data.Organization.Projects.Nodes
+		}
+	case "user":
+		if resp.Data.User != nil {
+			nodes = resp.Data.User.Projects.Nodes
+		}
+	}
+
+	for _, n := range nodes {
+		if n.Title == projectName {
+			return n.ID
+		}
+	}
+	return ""
+}
+
 func runGhCommand(t *testing.T, args ...string) string {
 	t.Helper()
+	output, err := runGhCommandAllowError(args...)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return output
+}
+
+func runGhCommandAllowError(args ...string) (string, error) {
 	cmd := exec.Command("gh", args...)
 	cmd.Env = os.Environ()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("gh %v failed: %v\n%s", args, err, string(output))
+		return string(output), fmt.Errorf("gh %v failed: %w: %s", args, err, string(output))
 	}
-	return string(output)
+	return string(output), nil
 }
 
 func repoRoot(t *testing.T) string {
