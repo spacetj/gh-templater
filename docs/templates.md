@@ -24,6 +24,7 @@ indentation consistent—two spaces for nested fields works best.
 ## Examples
 - [`templates/backend-grpc.yaml`](../templates/backend-grpc.yaml): production-ready Go gRPC service.
 - [`templates/agentic-app.yaml`](../templates/agentic-app.yaml): AI agent powered by ADK, Gemini, and Vertex AI.
+- [`templates/e2e-smoke.yaml`](../templates/e2e-smoke.yaml): minimal template used by the automated E2E test (project-only, no issues).
 
 Place custom templates anywhere in your repo and reference them with `--template <path>`.
 

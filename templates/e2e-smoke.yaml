@@ -1,0 +1,10 @@
+name: E2E Smoke Template
+readme: |
+  # E2E Smoke Template
+
+  This minimal template powers the automated end-to-end test. It only creates a
+  GitHub Project with documentation so the test can create and delete real
+  resources without filing issues or milestones.
+
+milestones: []
+issues: []
