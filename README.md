@@ -29,14 +29,34 @@ graph LR
      --org your-org \
      --project "Platform Readiness" \
      --issues-repo your-org/roadmap \
-     --template templates/backend-grpc.yaml
-   ```
+    --template templates/backend-grpc.yaml
+  ```
 
 The command will:
 - 🚧 Create a GitHub Project (Projects v2) under the org you specify.
 - 📘 Apply the template README content to the project.
 - 🎯 Create milestones and issues in the target repository.
 - 📌 Add each issue to the new project automatically.
+
+## 🤖 Automate with GitHub Actions
+
+Trigger the included workflow to stand up a project without touching your terminal:
+
+1. Create a fine-scoped PAT (Projects, Issues, and Repo access) and add it as the repository secret `GH_TEMPLATER_TOKEN`.
+2. Open **Actions → Apply Project Template → Run workflow**.
+3. Provide the organization, issues repo (`owner/repo`), project name, and template filename (relative to `templates/`).
+
+The workflow exports the secret as both `GH_TOKEN` and `GITHUB_TOKEN`, so the `gh` CLI inside the runner can authenticate and run `gh templater apply ...` for you. You can also dispatch it via CLI:
+
+```bash
+gh workflow run Apply-Project-Template \
+  -f org=your-org \
+  -f repo=your-org/roadmap \
+  -f project-name="Platform Readiness" \
+  -f template-name=backend-grpc.yaml
+```
+
+> ℹ️ Secrets are resolved at runtime—no PAT ever appears in the workflow inputs or logs unless echoed explicitly.
 
 ## 🧾 Template format
 Templates are YAML files that describe the project README, milestones, and issues. A minimal example:

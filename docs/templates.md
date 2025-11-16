@@ -26,3 +26,7 @@ indentation consistent—two spaces for nested fields works best.
 - [`templates/agentic-app.yaml`](../templates/agentic-app.yaml): AI agent powered by ADK, Gemini, and Vertex AI.
 
 Place custom templates anywhere in your repo and reference them with `--template <path>`.
+
+## Automating templates via Actions
+
+The repository ships with `.github/workflows/apply-template.yml`, which exposes the same inputs as the CLI via `workflow_dispatch`. Add a repository secret named `GH_TEMPLATER_TOKEN` (PAT with Projects + Issues permissions) and trigger the workflow to provision Projects from templates on demand—perfect for PM-facing dashboards or internal portals.
