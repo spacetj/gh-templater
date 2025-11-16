@@ -2,6 +2,7 @@ package github
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -45,13 +46,13 @@ func NewCLIClient(r runner.Runner) *CLIClient {
 
 // CreateProject creates a project for the organization and returns its identifiers.
 func (c *CLIClient) CreateProject(owner, title string) (ProjectInfo, error) {
-	orgID, err := c.lookupOrganizationID(owner)
+	ownerID, err := c.lookupOwnerID(owner)
 	if err != nil {
 		return ProjectInfo{}, err
 	}
 
 	query := `mutation($ownerId:ID!, $title:String!) { createProjectV2(input:{ownerId:$ownerId, title:$title}) { projectV2 { id number url } } }`
-	output, err := c.runner.Run("gh", "api", "graphql", "-f", "query="+query, "-F", "ownerId="+orgID, "-F", "title="+title)
+	output, err := c.runner.Run("gh", "api", "graphql", "-f", "query="+query, "-F", "ownerId="+ownerID, "-F", "title="+title)
 	if err != nil {
 		return ProjectInfo{}, fmt.Errorf("create project: %w", err)
 	}
@@ -130,10 +131,18 @@ func (c *CLIClient) AddItemToProject(owner string, projectNumber int, itemURL st
 	return nil
 }
 
+var (
+	errOrganizationNotFound = errors.New("organization not found")
+	errUserNotFound         = errors.New("user not found")
+)
+
 func (c *CLIClient) lookupOrganizationID(owner string) (string, error) {
 	query := `query($login:String!){ organization(login:$login) { id } }`
 	output, err := c.runner.Run("gh", "api", "graphql", "-f", "query="+query, "-F", "login="+owner)
 	if err != nil {
+		if strings.Contains(err.Error(), "Could not resolve to an Organization") {
+			return "", fmt.Errorf("%w: %s", errOrganizationNotFound, owner)
+		}
 		return "", fmt.Errorf("lookup organization: %w", err)
 	}
 
@@ -150,8 +159,45 @@ func (c *CLIClient) lookupOrganizationID(owner string) (string, error) {
 	}
 
 	if parsed.Data.Organization.ID == "" {
-		return "", fmt.Errorf("organization %s not found", owner)
+		return "", fmt.Errorf("%w: %s", errOrganizationNotFound, owner)
 	}
 
 	return parsed.Data.Organization.ID, nil
+}
+
+func (c *CLIClient) lookupOwnerID(owner string) (string, error) {
+	id, err := c.lookupOrganizationID(owner)
+	if err == nil {
+		return id, nil
+	}
+	if !errors.Is(err, errOrganizationNotFound) {
+		return "", err
+	}
+	return c.lookupUserID(owner)
+}
+
+func (c *CLIClient) lookupUserID(owner string) (string, error) {
+	query := `query($login:String!){ user(login:$login) { id } }`
+	output, err := c.runner.Run("gh", "api", "graphql", "-f", "query="+query, "-F", "login="+owner)
+	if err != nil {
+		if strings.Contains(err.Error(), "Could not resolve to a User") {
+			return "", fmt.Errorf("%w: %s", errUserNotFound, owner)
+		}
+		return "", fmt.Errorf("lookup user: %w", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			User struct {
+				ID string `json:"id"`
+			} `json:"user"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &parsed); err != nil {
+		return "", fmt.Errorf("parse user id: %w", err)
+	}
+	if parsed.Data.User.ID == "" {
+		return "", fmt.Errorf("%w: %s", errUserNotFound, owner)
+	}
+	return parsed.Data.User.ID, nil
 }

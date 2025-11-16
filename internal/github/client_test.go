@@ -1,14 +1,14 @@
 package github
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 )
 
 type fakeRunner struct {
 	calls     []call
 	responses []string
-	errAt     int
+	errs      map[int]error
 }
 
 type call struct {
@@ -18,8 +18,10 @@ type call struct {
 
 func (f *fakeRunner) Run(cmd string, args ...string) (string, error) {
 	f.calls = append(f.calls, call{cmd: cmd, args: args})
-	if f.errAt > 0 && len(f.calls) == f.errAt {
-		return "", fmt.Errorf("forced error")
+	if f.errs != nil {
+		if err, ok := f.errs[len(f.calls)]; ok {
+			return "", err
+		}
 	}
 
 	if len(f.responses) == 0 {
@@ -30,7 +32,7 @@ func (f *fakeRunner) Run(cmd string, args ...string) (string, error) {
 	return resp, nil
 }
 
-func TestCreateProject(t *testing.T) {
+func TestCreateProjectOrganizationOwner(t *testing.T) {
 	runner := &fakeRunner{responses: []string{
 		`{"data":{"organization":{"id":"ORG_ID"}}}`,
 		`{"data":{"createProjectV2":{"projectV2":{"id":"PROJ_ID","number":12,"url":"https://example.com"}}}}`,
@@ -48,6 +50,30 @@ func TestCreateProject(t *testing.T) {
 
 	if len(runner.calls) != 2 {
 		t.Fatalf("expected 2 commands, got %d", len(runner.calls))
+	}
+}
+
+func TestCreateProjectUserFallback(t *testing.T) {
+	runner := &fakeRunner{
+		responses: []string{
+			`{"data":{"user":{"id":"USER_ID"}}}`,
+			`{"data":{"createProjectV2":{"projectV2":{"id":"PROJ_ID","number":12,"url":"https://example.com"}}}}`,
+		},
+		errs: map[int]error{
+			1: errors.New("Could not resolve to an Organization with the login of \"octo-user\"."),
+		},
+	}
+
+	client := NewCLIClient(runner)
+	project, err := client.CreateProject("octo-user", "Demo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if project.ID != "PROJ_ID" {
+		t.Fatalf("unexpected project info: %+v", project)
+	}
+	if len(runner.calls) != 3 {
+		t.Fatalf("expected 3 commands (org lookup, user lookup, mutation)")
 	}
 }
 
