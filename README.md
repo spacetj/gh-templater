@@ -1,12 +1,22 @@
-# gh-templater
+# gh-templater ✨🛠️
 
 > A GitHub CLI extension that turns YAML project templates into fully-provisioned GitHub Projects with milestones and issues.
 
-## Why
+## 🌟 Why
 Modern teams repeat the same bootstrap steps for every new initiative. `gh-templater` lets you codify those steps as YAML so
 anyone can spin up a ready-to-track project with a single command—no copy/paste required.
 
-## Quickstart
+```mermaid
+graph LR
+  A[Template YAML 📜] --> B[gh templater apply 🧩]
+  B --> C[Create Project 🚀]
+  B --> D[Upload README 📘]
+  B --> E[Generate Milestones 🎯]
+  B --> F[Open Issues 🐛➡️📋]
+  C --> G[Teams move fast 💨]
+```
+
+## 🚀 Quickstart
 
 1. [Install GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) and ensure you are authenticated (`gh auth login`).
 2. Install the extension:
@@ -23,12 +33,12 @@ anyone can spin up a ready-to-track project with a single command—no copy/past
    ```
 
 The command will:
-- Create a GitHub Project (Projects v2) under the org you specify.
-- Apply the template README content to the project.
-- Create milestones and issues in the target repository.
-- Add each issue to the new project automatically.
+- 🚧 Create a GitHub Project (Projects v2) under the org you specify.
+- 📘 Apply the template README content to the project.
+- 🎯 Create milestones and issues in the target repository.
+- 📌 Add each issue to the new project automatically.
 
-## Template format
+## 🧾 Template format
 Templates are YAML files that describe the project README, milestones, and issues. A minimal example:
 
 ```yaml
@@ -48,21 +58,21 @@ issues:
 
 See [`docs/templates.md`](docs/templates.md) for the full schema and extension-specific tips.
 
-## Commands
+## 🧰 Commands
 
 - `gh templater apply`: Apply a YAML template to an organization and issues repository.
 
 Run `gh templater apply --help` to see the complete flag list.
 
-## Development
+## 🛠️ Development
 
 This extension follows the [GitHub CLI extension](https://docs.github.com/en/github-cli/github-cli/creating-github-cli-extensions) model.
 
-### Requirements
+### ✅ Requirements
 - Go 1.21+
 - (Optional) [`golangci-lint`](https://golangci-lint.run/usage/install/) for richer linting
 
-### Useful scripts
+### 🧪 Useful scripts
 
 The repository includes a `Makefile` for a fast feedback loop:
 
@@ -71,9 +81,10 @@ make fmt   # gofmt all Go files
 make lint  # run golangci-lint if available, otherwise go vet
 make test  # run unit tests
 make build # compile the gh-templater binary
+make help  # list targets with descriptions
 ```
 
-### Local execution
+### 🏃 Local execution
 
 Clone the repo and use `gh` to run the local extension without installing globally:
 
@@ -81,11 +92,11 @@ Clone the repo and use `gh` to run the local extension without installing global
 gh extension exec ./gh-templater templater apply --org my-org --project "My Project" --issues-repo my-org/roadmap --template templates/backend-grpc.yaml
 ```
 
-## Inspiration
+## 💡 Inspiration
 - [`gh-projects`](https://github.com/github/gh-projects) for CLI ergonomics
 - [`gk-cli`](https://github.com/gitkraken/gk-cli) for documentation tone and structure
 
-## Contributing
+## 🤝 Contributing
 - Open an issue or PR with your proposal.
 - Add tests for new behaviors.
 - Keep templates and docs in sync so users can move from README to execution quickly.
