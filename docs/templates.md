@@ -1,0 +1,28 @@
+# Template schema
+
+Templates describe everything needed to stand up a GitHub Project and its execution backlog. Each file is a YAML document
+with three sections: `readme`, `milestones`, and `issues`.
+
+The built-in parser supports the YAML constructs used in the example files (maps, lists, and `|` block scalars). Keep
+indentation consistent—two spaces for nested fields works best.
+
+## Fields
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | No | Human-friendly template name. |
+| `readme` | string | No | Markdown that becomes the Project README. Leave blank to skip. |
+| `milestones` | list | No | Milestones created in the issues repository. Each milestone includes `title`, optional `description`, and optional ISO8601 `due_on`. |
+| `issues` | list | No | Issues created in the issues repository. Each issue includes `title`, `body`, optional `labels`, optional `milestone` (must match a milestone title), and optional `assignees`. |
+
+## Authoring tips
+- Keep `readme` focused on the project mission, milestones, and definition of done.
+- Use `labels` to pre-triage workstreams (e.g., `backend`, `infra`, `docs`).
+- Use multi-line `body` blocks for rich checklists and links to external docs.
+- `milestone` names referenced by issues must match the milestone titles exactly; the extension will fail fast if not.
+
+## Examples
+- [`templates/backend-grpc.yaml`](../templates/backend-grpc.yaml): production-ready Go gRPC service.
+- [`templates/agentic-app.yaml`](../templates/agentic-app.yaml): AI agent powered by ADK, Gemini, and Vertex AI.
+
+Place custom templates anywhere in your repo and reference them with `--template <path>`.

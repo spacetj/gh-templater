@@ -1,0 +1,97 @@
+name: Backend gRPC Service
+readme: |
+  # Backend gRPC Service Template
+
+  This template bootstraps a production-grade Go microservice using gRPC. It assumes
+  GitHub Actions for CI, Terraform for infrastructure as code, and Kubernetes for runtime orchestration.
+
+  ## Included milestones
+  - Architecture & repo readiness
+  - Service implementation
+  - Observability and operations
+
+  ## Useful docs
+  - Go modules: https://go.dev/doc/modules
+  - gRPC in Go: https://grpc.io/docs/languages/go/basics/
+  - GitHub Actions: https://docs.github.com/actions
+  - SRE golden signals: https://sre.google/sre-book/monitoring-distributed-systems/
+
+  ## Expected outcomes
+  - CI/CD pipelines with linting, unit tests, contract tests, and container builds
+  - Production-ready telemetry (metrics, tracing, structured logging)
+  - Hardened runtime with SLOs, runbooks, and dashboards
+
+milestones:
+  - title: Architecture & Bootstrap
+    description: Establish service contracts, repo layout, and local developer flow.
+    due_on: 2024-12-15
+  - title: Core Service Delivery
+    description: Implement the gRPC API, persistence, and release automation.
+    due_on: 2025-01-15
+  - title: Observability & Operations
+    description: Add SLIs/SLOs, dashboards, alerting, and operational runbooks.
+    due_on: 2025-02-01
+
+issues:
+  - title: Define protobuf contracts and API guidelines
+    body: |
+      - Draft the initial `.proto` files with request/response validation notes.
+      - Document backward-compatible release rules and versioning.
+      - Add buf or clang-format linting for protobuf definitions.
+      - Link to design doc and capture review approvals.
+    labels: [design, backend]
+    milestone: Architecture & Bootstrap
+
+  - title: Establish Go module and repo scaffolding
+    body: |
+      - Initialize `go.mod` with proper module path.
+      - Add `cmd/<service>` entrypoint, `internal/` for business logic, and `pkg/` for reusable clients.
+      - Wire up `make lint test` with golangci-lint and unit tests.
+      - Configure pre-commit hooks for formatting and static analysis.
+    labels: [setup, backend]
+    milestone: Architecture & Bootstrap
+
+  - title: Implement gRPC server with health and readiness
+    body: |
+      - Generate gRPC stubs from protobufs.
+      - Expose health/readiness endpoints using gRPC health protocol.
+      - Add integration tests using a real server bound to an ephemeral port.
+      - Document local development commands in README.
+    labels: [backend, grpc]
+    milestone: Core Service Delivery
+
+  - title: Add persistence layer and migrations
+    body: |
+      - Select datastore (e.g., Postgres) and document rationale.
+      - Implement repository interfaces with context-aware operations.
+      - Add database migrations via `golang-migrate` and wire into CI.
+      - Provide seed data for local development.
+    labels: [database, backend]
+    milestone: Core Service Delivery
+
+  - title: Harden CI/CD and release automation
+    body: |
+      - Add GitHub Actions workflows for lint, test, and Docker build.
+      - Publish images to the chosen registry with semantic version tags.
+      - Gate merges on status checks and vulnerability scans.
+      - Provide release playbook and rollback checklist.
+    labels: [ci, release]
+    milestone: Core Service Delivery
+
+  - title: Add observability (metrics, tracing, logging)
+    body: |
+      - Integrate OpenTelemetry SDK with exporters for metrics and traces.
+      - Define golden signals and expose Prometheus metrics endpoint.
+      - Implement structured logging with correlation IDs.
+      - Add documentation for configuring collectors in staging and prod.
+    labels: [observability, sre]
+    milestone: Observability & Operations
+
+  - title: Define SLOs, dashboards, and alerts
+    body: |
+      - Draft SLIs and target SLOs for latency, availability, and error rates.
+      - Create Grafana dashboards and link in README.
+      - Configure alert policies and escalation paths.
+      - Add runbook with remediation steps and incident templates.
+    labels: [sre, reliability]
+    milestone: Observability & Operations

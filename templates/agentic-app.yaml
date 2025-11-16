@@ -1,0 +1,90 @@
+name: Agentic Application on Vertex AI + ADK
+readme: |
+  # Agentic Application Template
+
+  This template creates a project for building an agent using the Application Development Kit (ADK),
+  Gemini models, and Vertex AI tooling. It emphasizes secure infra setup, evaluation, and launch-readiness.
+
+  ## Tracks
+  - Platform & security hardening
+  - Agent implementation and evaluation
+  - Launch & operations
+
+  ## Reference docs
+  - ADK quickstart: https://ai.google.dev/gemini-api/docs/agent-builder
+  - Vertex AI setup: https://cloud.google.com/vertex-ai/docs/start
+  - Prompt safety: https://ai.google.dev/gemini-api/docs/safety
+
+milestones:
+  - title: Platform & Access
+    description: Provision cloud project, IAM, secret management, and network controls.
+    due_on: 2024-12-10
+  - title: Agent Build & Evaluation
+    description: Implement core agent flows, evaluators, and monitoring hooks.
+    due_on: 2025-01-05
+  - title: Launch & Operations
+    description: Prepare rollout, SLOs, and on-call processes for production.
+    due_on: 2025-01-25
+
+issues:
+  - title: Provision cloud project and enable Vertex AI
+    body: |
+      - Create dedicated GCP project with billing linked.
+      - Enable Vertex AI, Secret Manager, and Cloud Logging APIs.
+      - Set up Terraform state backend and environment workspaces.
+      - Document project naming, folder/ORG policy alignment, and budget alerts.
+    labels: [infra, gcp]
+    milestone: Platform & Access
+
+  - title: Configure IAM and workload identity
+    body: |
+      - Create service accounts for CI and runtime with least-privilege roles.
+      - Enable Workload Identity Federation for GitHub Actions.
+      - Store API keys and signing keys in Secret Manager; grant scoped access.
+      - Add threat model notes for key management and dependency supply chain.
+    labels: [security, infra]
+    milestone: Platform & Access
+
+  - title: Implement ADK-powered agent skeleton
+    body: |
+      - Scaffold agent runtime using ADK with Gemini context caching.
+      - Define tool interfaces (retrieval, webhooks, structured outputs).
+      - Add unit tests for tool adapters and conversation state handling.
+      - Capture design decisions in ADRs committed to the repo.
+    labels: [agent, backend]
+    milestone: Agent Build & Evaluation
+
+  - title: Data pipelines and retrieval setup
+    body: |
+      - Stand up ingestion job for documents into vector store (e.g., Vertex Matching Engine or Pinecone).
+      - Add evaluators for grounding and hallucination checks with sample datasets.
+      - Document refresh cadence and monitoring hooks for data quality.
+    labels: [data, retrieval]
+    milestone: Agent Build & Evaluation
+
+  - title: Evaluation harness and red-teaming
+    body: |
+      - Build automated eval suite covering safety, latency, and cost metrics.
+      - Integrate guardrails (content filters, abuse detection) and log audit events.
+      - Run red-team scenarios and capture mitigations.
+      - Share dashboards for eval runs in README.
+    labels: [evaluation, safety]
+    milestone: Agent Build & Evaluation
+
+  - title: Rollout plan and SLOs
+    body: |
+      - Define KPIs and SLOs for responsiveness, success rate, and safety events.
+      - Build Grafana/Cloud Monitoring dashboards for live traffic.
+      - Draft rollout checklist with canary + progressive exposure.
+      - Document incident response and on-call rotations.
+    labels: [sre, launch]
+    milestone: Launch & Operations
+
+  - title: Cost management and guardrails
+    body: |
+      - Set budget alerts and per-environment quota limits.
+      - Add per-request cost attribution in logs/metrics.
+      - Configure fallback strategies for rate limiting or model errors.
+      - Document playbooks for scaling and model version rollbacks.
+    labels: [cost, reliability]
+    milestone: Launch & Operations
