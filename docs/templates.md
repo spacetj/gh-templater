@@ -12,9 +12,10 @@ indentation consistent—two spaces for nested fields works best.
 | --- | --- | --- | --- |
 | `name` | string | No | Human-friendly template name. |
 | `readme` | string | No | Markdown that becomes the Project README. Leave blank to skip. |
-| `labels` | list | No | Repository labels to ensure before creating issues. Each entry supports `name`, optional `color` (hex, with or without `#`), and optional `description`. |
+| `labels` | list | No | Repo labels to ensure. Each entry supports `name`, optional `color`, and optional `description`. |
+| `fields` | list | No | Custom Project V2 fields. Set `data_type` (`SINGLE_SELECT`, `TEXT`, `NUMBER`, `DATE`, etc.), optional `description`, and for select fields provide `options` (each with `name`, optional `color`, `description`). |
 | `milestones` | list | No | Milestones created in the issues repository. Each milestone includes `title`, optional `description`, and optional ISO8601 `due_on`. |
-| `issues` | list | No | Issues created in the issues repository. Each issue includes `title`, `body`, optional `labels`, optional `milestone` (must match a milestone title), and optional `assignees`. |
+| `issues` | list | No | Issues created in the issues repository. Each issue includes `title`, `body`, optional `labels`, optional `milestone` (must match a milestone title), optional `assignees`, optional `fields` (map of project field name to value), and optional `doc` context. |
 
 ## Authoring tips
 - Keep `readme` focused on the project mission, milestones, and definition of done.

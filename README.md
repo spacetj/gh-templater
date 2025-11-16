@@ -71,7 +71,7 @@ gh workflow run Apply-Project-Template \
 > ℹ️ Secrets are resolved at runtime—no PAT ever appears in the workflow inputs or logs unless echoed explicitly.
 
 ## 🧾 Template format
-Templates are YAML files that describe the project README, labels, milestones, and issues. A minimal example:
+Templates are YAML files that describe the project README, labels, custom project fields, milestones, and issues. A minimal example:
 
 ```yaml
 name: Reliability Sprint
@@ -82,6 +82,13 @@ labels:
   - name: spec
     color: 9B59B6
     description: Spec-driven work
+fields:
+  - name: Spec State
+    data_type: SINGLE_SELECT
+    description: Spec kit workflow
+    options:
+      - name: Draft
+        color: YELLOW
 milestones:
   - title: Hardening
     description: Improve error budgets
@@ -90,6 +97,9 @@ issues:
     body: Collect SLI data for the past 90 days
     labels: [reliability]
     milestone: Hardening
+    fields:
+      Spec State: Draft
+      Spec Link: docs/roadmap/reliability.md
 ```
 
 See [`docs/templates.md`](docs/templates.md) for the full schema, including how to scope runs with `--sections`.

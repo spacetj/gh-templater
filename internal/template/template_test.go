@@ -11,12 +11,27 @@ func TestLoadTemplate(t *testing.T) {
 	path := t.TempDir() + "/template.yaml"
 	content := `name: Sample
 readme: README content
+fields:
+  - name: Spec State
+    data_type: SINGLE_SELECT
+    options:
+      - name: Draft
+        color: yellow
 milestones:
   - title: Kickoff
     description: Start the project
 issues:
   - title: First issue
     body: Do something
+    fields:
+      Spec State: Draft
+    doc:
+      source: docs/specs/step-1.md
+      link: https://example.com/spec
+      purpose: Validate MVP
+      key_activities:
+        - Interview users
+        - Scope risks
 `
 
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -38,6 +53,12 @@ issues:
 
 	if len(tpl.Issues) != 1 {
 		t.Fatalf("expected 1 issue, got %d", len(tpl.Issues))
+	}
+	if len(tpl.Fields) != 1 || tpl.Fields[0].Name != "Spec State" {
+		t.Fatalf("expected field parsed, got %+v", tpl.Fields)
+	}
+	if tpl.Issues[0].Doc.Source != "docs/specs/step-1.md" {
+		t.Fatalf("expected doc context parsed, got %+v", tpl.Issues[0].Doc)
 	}
 }
 
