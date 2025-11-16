@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var userHomeDir = os.UserHomeDir
+
 // Template describes the structure required to create a project, milestones, and issues.
 type Template struct {
 	Name       string
@@ -35,10 +37,11 @@ type TemplateIssue struct {
 // Load reads a YAML file into a Template instance.
 // The parser is a focused implementation that supports the subset of YAML used by the built-in templates
 // (maps, lists, and block scalars).
+
 func Load(path string) (Template, error) {
-	absPath, err := filepath.Abs(path)
+	absPath, err := resolveTemplatePath(path)
 	if err != nil {
-		return Template{}, fmt.Errorf("resolve template path: %w", err)
+		return Template{}, err
 	}
 	dir := filepath.Dir(absPath)
 	file := filepath.Base(absPath)
@@ -259,4 +262,44 @@ func (y *yamlSubset) parseBodyBlock(current string) (string, error) {
 		builder = append(builder, strings.TrimLeft(raw, " \t"))
 	}
 	return strings.Join(builder, "\n"), nil
+}
+
+func resolveTemplatePath(path string) (string, error) {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return "", fmt.Errorf("template path is required")
+	}
+
+	expanded, err := expandHome(trimmed)
+	if err != nil {
+		return "", err
+	}
+
+	abs, err := filepath.Abs(expanded)
+	if err != nil {
+		return "", fmt.Errorf("resolve template path: %w", err)
+	}
+	return abs, nil
+}
+
+func expandHome(path string) (string, error) {
+	if !strings.HasPrefix(path, "~") {
+		return path, nil
+	}
+
+	home, err := userHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve home directory: %w", err)
+	}
+
+	if path == "~" {
+		return home, nil
+	}
+
+	switch path[1] {
+	case '/', '\\':
+		return filepath.Join(home, path[2:]), nil
+	default:
+		return path, nil
+	}
 }

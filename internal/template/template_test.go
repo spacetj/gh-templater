@@ -2,6 +2,8 @@ package template
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -36,5 +38,32 @@ issues:
 
 	if len(tpl.Issues) != 1 {
 		t.Fatalf("expected 1 issue, got %d", len(tpl.Issues))
+	}
+}
+
+func TestLoadTemplateExpandsHomeShortcut(t *testing.T) {
+	originalHomeFunc := userHomeDir
+	t.Cleanup(func() { userHomeDir = originalHomeFunc })
+
+	fakeHome := t.TempDir()
+	userHomeDir = func() (string, error) {
+		return fakeHome, nil
+	}
+
+	path := filepath.Join(fakeHome, "template.yaml")
+	content := `name: Sample`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write template: %v", err)
+	}
+
+	if _, err := Load("~/template.yaml"); err != nil {
+		t.Fatalf("load template with ~ prefix: %v", err)
+	}
+}
+
+func TestLoadTemplateRequiresPath(t *testing.T) {
+	_, err := Load(" ")
+	if err == nil || !strings.Contains(err.Error(), "required") {
+		t.Fatalf("expected error for empty path, got %v", err)
 	}
 }
