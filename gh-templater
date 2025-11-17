@@ -1,5 +1,5 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 set -euo pipefail
 
-DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+DIR="$(cd -- "$(dirname "$0")" && pwd)"
 exec go run "$DIR/cmd/gh-templater" "$@"
