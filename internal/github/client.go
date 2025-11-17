@@ -44,11 +44,10 @@ type FieldOption struct {
 }
 
 type ProjectField struct {
-	ID          string
-	Name        string
-	DataType    string
-	Description string
-	Options     map[string]ProjectFieldOption
+	ID       string
+	Name     string
+	DataType string
+	Options  map[string]ProjectFieldOption
 }
 
 type ProjectFieldOption struct {
@@ -633,13 +632,6 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
             id
             name
             dataType
-            description
-          }
-          ... on ProjectV2SingleSelectField {
-            id
-            name
-            dataType
-            description
             options { id name }
           }
         }
@@ -657,12 +649,11 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
 			Node struct {
 				Fields struct {
 					Nodes []struct {
-						Typename    string `json:"__typename"`
-						ID          string `json:"id"`
-						Name        string `json:"name"`
-						DataType    string `json:"dataType"`
-						Description string `json:"description"`
-						Options     []struct {
+						Typename string `json:"__typename"`
+						ID       string `json:"id"`
+						Name     string `json:"name"`
+						DataType string `json:"dataType"`
+						Options  []struct {
 							ID   string `json:"id"`
 							Name string `json:"name"`
 						} `json:"options"`
@@ -676,7 +667,7 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
 	}
 	fields := make(map[string]ProjectField)
 	for _, node := range resp.Data.Node.Fields.Nodes {
-		pf := ProjectField{ID: node.ID, Name: node.Name, DataType: node.DataType, Description: node.Description, Options: make(map[string]ProjectFieldOption)}
+		pf := ProjectField{ID: node.ID, Name: node.Name, DataType: node.DataType, Options: make(map[string]ProjectFieldOption)}
 		for _, opt := range node.Options {
 			pf.Options[opt.Name] = ProjectFieldOption{ID: opt.ID, Name: opt.Name}
 		}
