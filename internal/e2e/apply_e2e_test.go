@@ -147,7 +147,7 @@ func detectNewSmokeIssue(t *testing.T, before map[string]smokeIssue) smokeIssue 
 }
 
 func lookupSmokeMilestoneNumber(t *testing.T) string {
-	output := runGhCommand(t, "api", fmt.Sprintf("repos/%s/milestones", testRepo), "-f", "state=all", "-f", "per_page=100")
+	output := runGhCommand(t, "api", fmt.Sprintf("repos/%s/milestones?state=all&per_page=100", testRepo))
 	var milestones []struct {
 		Title  string `json:"title"`
 		Number int    `json:"number"`
