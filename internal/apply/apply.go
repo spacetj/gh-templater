@@ -164,9 +164,8 @@ func convertFieldTemplates(fields []template.TemplateField) []github.FieldTempla
 	var result []github.FieldTemplate
 	for _, field := range fields {
 		ft := github.FieldTemplate{
-			Name:        field.Name,
-			DataType:    strings.ToUpper(field.DataType),
-			Description: field.Description,
+			Name:     field.Name,
+			DataType: strings.ToUpper(field.DataType),
 		}
 		for _, opt := range field.Options {
 			ft.Options = append(ft.Options, github.FieldOption{Name: opt.Name, Color: opt.Color, Description: opt.Description})

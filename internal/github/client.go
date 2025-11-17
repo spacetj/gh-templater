@@ -23,10 +23,9 @@ type Client interface {
 }
 
 type FieldTemplate struct {
-	Name        string
-	DataType    string
-	Description string
-	Options     []FieldOption
+	Name     string
+	DataType string
+	Options  []FieldOption
 }
 
 type FieldOption struct {
@@ -303,9 +302,6 @@ func (c *CLIClient) createProjectField(projectID string, field FieldTemplate) er
 		"projectId": projectID,
 		"name":      field.Name,
 		"dataType":  field.DataType,
-	}
-	if strings.TrimSpace(field.Description) != "" {
-		input["description"] = field.Description
 	}
 	if strings.EqualFold(field.DataType, "SINGLE_SELECT") && len(field.Options) > 0 {
 		var options []map[string]string
