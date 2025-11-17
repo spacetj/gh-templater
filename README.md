@@ -102,7 +102,7 @@ issues:
       Spec Link: docs/roadmap/reliability.md
 ```
 
-See [`docs/templates.md`](docs/templates.md) for the full schema, including how to scope runs with `--sections`.
+See [`docs/templates.md`](docs/templates.md) for the full schema, including how to scope runs with `--sections`. For a full Shape Up project bootstrap, try `templates/shapeup-launchpad.yaml` which mirrors the legacy `bootstrap-project.sh` content.
 
 ## 🧰 Commands
 
