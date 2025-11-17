@@ -198,7 +198,7 @@ func cleanupSmokeArtifacts(t *testing.T) {
 
 func installGhTemplaterExtension(t *testing.T, repoPath string) {
 	removeGhTemplaterExtension(t)
-	runGhCommand(t, "extension", "install", repoPath)
+	runGhCommandInDir(t, repoPath, "extension", "install", ".")
 	t.Cleanup(func() {
 		removeGhTemplaterExtension(t)
 	})
@@ -288,6 +288,26 @@ func runGhCommand(t *testing.T, args ...string) string {
 func runGhCommandAllowError(args ...string) (string, error) {
 	cmd := exec.Command("gh", args...)
 	cmd.Env = os.Environ()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("gh %v failed: %w: %s", args, err, string(output))
+	}
+	return string(output), nil
+}
+
+func runGhCommandInDir(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	output, err := runGhCommandAllowErrorInDir(dir, args...)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return output
+}
+
+func runGhCommandAllowErrorInDir(dir string, args ...string) (string, error) {
+	cmd := exec.Command("gh", args...)
+	cmd.Env = os.Environ()
+	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("gh %v failed: %w: %s", args, err, string(output))
