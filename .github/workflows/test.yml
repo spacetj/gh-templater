@@ -31,7 +31,6 @@ jobs:
   e2e-tests:
     needs: unit-tests
     runs-on: ubuntu-latest
-    if: ${{ secrets.GH_TEMPLATER_TOKEN != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
