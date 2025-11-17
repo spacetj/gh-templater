@@ -126,7 +126,7 @@ func (c *CLIClient) CreateIssue(repo string, issue TemplateIssueWithResolvedMile
 
 // AddItemToProject adds an issue or pull request to the project.
 func (c *CLIClient) AddItemToProject(owner string, projectNumber int, itemURL string) error {
-	args := []string{"project", "item-add", "--owner", owner, "--project-number", fmt.Sprintf("%d", projectNumber), "--url", itemURL}
+	args := []string{"project", "item-add", fmt.Sprintf("%d", projectNumber), "--owner", owner, "--url", itemURL}
 	if _, err := c.runner.Run("gh", args...); err != nil {
 		return fmt.Errorf("add item to project: %w", err)
 	}
