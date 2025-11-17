@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -13,6 +14,8 @@ type fakeClient struct {
 	milestones     []string
 	addedToProject []string
 	labels         []string
+	projectFields  map[string]github.ProjectField
+	fieldUpdates   []map[string]interface{}
 }
 
 func (f *fakeClient) CreateProject(owner, title string) (github.ProjectInfo, error) {
@@ -33,13 +36,35 @@ func (f *fakeClient) CreateIssue(repo string, issue github.TemplateIssueWithReso
 	return url, nil
 }
 
-func (f *fakeClient) AddItemToProject(owner string, projectNumber int, itemURL string) error {
+func (f *fakeClient) AddItemToProject(owner string, projectNumber int, itemURL string) (string, error) {
 	f.addedToProject = append(f.addedToProject, itemURL)
-	return nil
+	return fmt.Sprintf("item-%d", len(f.addedToProject)), nil
 }
 
 func (f *fakeClient) EnsureLabel(repo, name, color, description string) error {
 	f.labels = append(f.labels, name+":"+color)
+	return nil
+}
+
+func (f *fakeClient) EnsureProjectFields(projectID string, fields []github.FieldTemplate) (map[string]github.ProjectField, error) {
+	if f.projectFields == nil {
+		f.projectFields = make(map[string]github.ProjectField)
+	}
+	for _, field := range fields {
+		if _, ok := f.projectFields[field.Name]; ok {
+			continue
+		}
+		options := make(map[string]github.ProjectFieldOption)
+		for _, opt := range field.Options {
+			options[opt.Name] = github.ProjectFieldOption{ID: opt.Name + "-id", Name: opt.Name}
+		}
+		f.projectFields[field.Name] = github.ProjectField{ID: field.Name + "-id", Name: field.Name, DataType: field.DataType, Options: options}
+	}
+	return f.projectFields, nil
+}
+
+func (f *fakeClient) UpdateProjectItemField(projectID, itemID string, fieldID string, value map[string]interface{}) error {
+	f.fieldUpdates = append(f.fieldUpdates, value)
 	return nil
 }
 
@@ -141,6 +166,37 @@ func TestParseSections(t *testing.T) {
 	}
 	if _, err := ParseSections("foo"); err == nil {
 		t.Fatalf("expected error for unknown section")
+	}
+}
+
+func TestApplySetsIssueFields(t *testing.T) {
+	tplPath := t.TempDir() + "/template.yaml"
+	content := `name: Demo
+fields:
+  - name: Priority
+    data_type: SINGLE_SELECT
+    options:
+      - name: High
+milestones:
+  - title: Cycle
+issues:
+  - title: Work
+    body: Details
+    milestone: Cycle
+    fields:
+      Priority: High
+`
+	writeFile(tplPath, content, t)
+	client := &fakeClient{}
+	opts := Options{Org: "acme", ProjectName: "Demo", IssuesRepo: "acme/repo", Template: tplPath}
+	if err := Apply(opts, client); err != nil {
+		t.Fatalf("apply returned error: %v", err)
+	}
+	if len(client.fieldUpdates) == 0 {
+		t.Fatalf("expected field updates to occur")
+	}
+	if _, ok := client.projectFields["Priority"]; !ok {
+		t.Fatalf("expected Priority field to be created")
 	}
 }
 
