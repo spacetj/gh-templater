@@ -205,7 +205,9 @@ func installGhTemplaterExtension(t *testing.T, repoPath string) {
 }
 
 func removeGhTemplaterExtension(t *testing.T) {
-	if _, err := runGhCommandAllowError("extension", "remove", "gh-templater"); err != nil && !strings.Contains(err.Error(), "not installed") {
+	if _, err := runGhCommandAllowError("extension", "remove", "gh-templater"); err != nil &&
+		!strings.Contains(err.Error(), "not installed") &&
+		!strings.Contains(err.Error(), "no extension found") {
 		t.Fatalf("remove extension failed: %v", err)
 	}
 }
