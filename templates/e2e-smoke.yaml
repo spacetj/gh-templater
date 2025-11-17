@@ -6,5 +6,15 @@ readme: |
   GitHub Project with documentation so the test can create and delete real
   resources without filing issues or milestones.
 
+labels:
+  - name: smoke-test
+    color: 95A5A6
+    description: Tag added to resources created by automated tests
+
+fields:
+  - name: Smoke Run ID
+    data_type: TEXT
+    description: Identifier for the automated test invocation
+
 milestones: []
 issues: []

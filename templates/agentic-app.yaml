@@ -15,6 +15,78 @@ readme: |
   - Vertex AI setup: https://cloud.google.com/vertex-ai/docs/start
   - Prompt safety: https://ai.google.dev/gemini-api/docs/safety
 
+labels:
+  - name: infra
+    color: 607D8B
+    description: Platform and infrastructure work
+  - name: gcp
+    color: 4285F4
+    description: Google Cloud specific tasks
+  - name: security
+    color: C0392B
+    description: Security, IAM, and threat modeling
+  - name: agent
+    color: 884EA0
+    description: Agent runtime or orchestration tasks
+  - name: backend
+    color: 1D6F93
+    description: Backend services or adapters
+  - name: data
+    color: 27AE60
+    description: Data ingestion and management
+  - name: retrieval
+    color: 16A085
+    description: Retrieval augmented generation work
+  - name: evaluation
+    color: F4D03F
+    description: Eval harnesses and safety checks
+  - name: safety
+    color: F1948A
+    description: Safety, guardrails, and red-teaming
+  - name: sre
+    color: 2C3E50
+    description: Reliability, SLOs, and on-call planning
+  - name: launch
+    color: F39C12
+    description: Launch planning and go-to-market readiness
+  - name: cost
+    color: 8E44AD
+    description: Cost management and optimization
+  - name: reliability
+    color: 34495E
+    description: Reliability hardening work
+
+fields:
+  - name: Priority
+    data_type: SINGLE_SELECT
+    description: Highlights urgency for each issue
+    options:
+      - name: Critical
+        color: RED
+      - name: High
+        color: ORANGE
+      - name: Normal
+        color: GREEN
+  - name: Work Type
+    data_type: SINGLE_SELECT
+    description: Categorizes the task
+    options:
+      - name: Platform
+        color: BLUE
+      - name: Security
+        color: RED
+      - name: Agent Runtime
+        color: PURPLE
+      - name: Data
+        color: GREEN
+      - name: Evaluation
+        color: ORANGE
+      - name: Operations
+        color: GRAY
+  - name: Spec Link
+    data_type: TEXT
+    description: Link to the canonical spec or ADR
+
 milestones:
   - title: Platform & Access
     description: Provision cloud project, IAM, secret management, and network controls.
@@ -35,6 +107,18 @@ issues:
       - Document project naming, folder/ORG policy alignment, and budget alerts.
     labels: [infra, gcp]
     milestone: Platform & Access
+    fields:
+      Priority: High
+      Work Type: Platform
+      Spec Link: docs/agentic/specs/platform-access.md
+    doc:
+      source: docs/agentic/specs/platform-access.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/platform-access.md
+      purpose: Stand up a secure GCP foundation for agent workloads.
+      key_activities:
+        - Create the dedicated project and enable services
+        - Configure Terraform backend and policies
+        - Document naming, budgets, and auditing expectations
 
   - title: Configure IAM and workload identity
     body: |
@@ -44,6 +128,18 @@ issues:
       - Add threat model notes for key management and dependency supply chain.
     labels: [security, infra]
     milestone: Platform & Access
+    fields:
+      Priority: High
+      Work Type: Security
+      Spec Link: docs/agentic/specs/iam.md
+    doc:
+      source: docs/agentic/specs/iam.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/iam.md
+      purpose: Enforce least privilege access for CI, runtime, and secrets.
+      key_activities:
+        - Create service accounts and workloads with scoped roles
+        - Configure Workload Identity Federation
+        - Capture threat model and mitigations
 
   - title: Implement ADK-powered agent skeleton
     body: |
@@ -53,6 +149,18 @@ issues:
       - Capture design decisions in ADRs committed to the repo.
     labels: [agent, backend]
     milestone: Agent Build & Evaluation
+    fields:
+      Priority: High
+      Work Type: Agent Runtime
+      Spec Link: docs/agentic/specs/agent-runtime.md
+    doc:
+      source: docs/agentic/specs/agent-runtime.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/agent-runtime.md
+      purpose: Deliver the core ADK-based agent, tools, and state handling.
+      key_activities:
+        - Scaffold the agent runtime and tool adapters
+        - Add tests for conversation state and tool IO
+        - Capture decisions in ADRs
 
   - title: Data pipelines and retrieval setup
     body: |
@@ -61,6 +169,18 @@ issues:
       - Document refresh cadence and monitoring hooks for data quality.
     labels: [data, retrieval]
     milestone: Agent Build & Evaluation
+    fields:
+      Priority: Normal
+      Work Type: Data
+      Spec Link: docs/agentic/specs/retrieval.md
+    doc:
+      source: docs/agentic/specs/retrieval.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/retrieval.md
+      purpose: Ingest documents and configure retrieval augmentation tiers.
+      key_activities:
+        - Implement ingestion job and storage
+        - Configure evaluators for grounding
+        - Document refresh cadence and quality checks
 
   - title: Evaluation harness and red-teaming
     body: |
@@ -70,6 +190,18 @@ issues:
       - Share dashboards for eval runs in README.
     labels: [evaluation, safety]
     milestone: Agent Build & Evaluation
+    fields:
+      Priority: High
+      Work Type: Evaluation
+      Spec Link: docs/agentic/specs/evaluation.md
+    doc:
+      source: docs/agentic/specs/evaluation.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/evaluation.md
+      purpose: Build automated eval suite and safety guardrails.
+      key_activities:
+        - Automate eval runs for latency, safety, and cost
+        - Integrate guardrails and logging
+        - Capture red-team scenarios & mitigations
 
   - title: Rollout plan and SLOs
     body: |
@@ -79,6 +211,18 @@ issues:
       - Document incident response and on-call rotations.
     labels: [sre, launch]
     milestone: Launch & Operations
+    fields:
+      Priority: High
+      Work Type: Operations
+      Spec Link: docs/agentic/specs/launch.md
+    doc:
+      source: docs/agentic/specs/launch.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/launch.md
+      purpose: Ensure production launch readiness with defined SLOs.
+      key_activities:
+        - Define KPIs/SLOs and dashboards
+        - Draft rollout checklist
+        - Document incident response plan
 
   - title: Cost management and guardrails
     body: |
@@ -88,3 +232,15 @@ issues:
       - Document playbooks for scaling and model version rollbacks.
     labels: [cost, reliability]
     milestone: Launch & Operations
+    fields:
+      Priority: Normal
+      Work Type: Operations
+      Spec Link: docs/agentic/specs/cost.md
+    doc:
+      source: docs/agentic/specs/cost.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/agentic/specs/cost.md
+      purpose: Control cost exposure and provide fallbacks for failures.
+      key_activities:
+        - Configure budgets and per-request attribution
+        - Outline fallback strategies
+        - Publish scaling and rollback playbooks
