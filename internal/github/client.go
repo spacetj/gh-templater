@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/github/gh-templater/internal/runner"
@@ -317,16 +318,11 @@ func (c *CLIClient) createProjectField(projectID string, field FieldTemplate) er
 		}
 		input["singleSelectOptions"] = options
 	}
-	variables := map[string]interface{}{"input": input}
-	payload, err := json.Marshal(variables)
-	if err != nil {
-		return fmt.Errorf("marshal field input: %w", err)
-	}
 	mutation := `mutation($input:CreateProjectV2FieldInput!) {
-	  createProjectV2Field(input:$input) { clientMutationId }
-	}`
-	args := []string{"api", "graphql", "-f", "query=" + mutation, "--raw-field", "variables=" + string(payload)}
-	if _, err := c.runner.Run("gh", args...); err != nil {
+  createProjectV2Field(input:$input) { clientMutationId }
+}`
+	variables := map[string]interface{}{"input": input}
+	if _, err := c.runGraphQL(mutation, variables); err != nil {
 		return fmt.Errorf("create project field %q: %w", field.Name, err)
 	}
 	return nil
@@ -399,17 +395,36 @@ func (c *CLIClient) UpdateProjectItemField(projectID, itemID, fieldID string, va
 		"fieldId":   fieldID,
 		"value":     value,
 	}
-	variables := map[string]interface{}{"input": input}
-	payload, err := json.Marshal(variables)
-	if err != nil {
-		return fmt.Errorf("marshal field value: %w", err)
-	}
 	mutation := `mutation($input:UpdateProjectV2ItemFieldValueInput!) {
   updateProjectV2ItemFieldValue(input:$input) { projectV2Item { id } }
 }`
-	args := []string{"api", "graphql", "-f", "query=" + mutation, "--raw-field", "variables=" + string(payload)}
-	if _, err := c.runner.Run("gh", args...); err != nil {
+	if _, err := c.runGraphQL(mutation, map[string]interface{}{"input": input}); err != nil {
 		return fmt.Errorf("update project field value: %w", err)
 	}
 	return nil
+}
+
+func (c *CLIClient) runGraphQL(query string, variables map[string]interface{}) (string, error) {
+	payload := map[string]interface{}{"query": query}
+	if variables != nil {
+		payload["variables"] = variables
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	file, err := os.CreateTemp("", "gh-graphql-*.json")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(file.Name())
+	if _, err := file.Write(data); err != nil {
+		file.Close()
+		return "", err
+	}
+	if err := file.Close(); err != nil {
+		return "", err
+	}
+	args := []string{"api", "graphql", "--input", file.Name()}
+	return c.runner.Run("gh", args...)
 }
