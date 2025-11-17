@@ -18,6 +18,8 @@ const (
 	projectPrefix       = "gh-templater e2e"
 	smokeLabel          = "smoke-test"
 	smokeMilestoneTitle = "Smoke Cycle"
+	smokeFieldName      = "Smoke Run ID"
+	smokeFieldValue     = "gh-templater-e2e-run"
 )
 
 // TestApplyTemplateE2E exercises gh-templater against the real GitHub APIs.
@@ -43,7 +45,10 @@ func TestApplyTemplateE2E(t *testing.T) {
 	beforeIssues := listSmokeIssues(t)
 	installGhTemplaterExtension(t, repoRootPath)
 
-	projectName := fmt.Sprintf("%s %d", projectPrefix, time.Now().UnixNano())
+	projectName := os.Getenv("GH_TEMPLATER_E2E_PROJECT")
+	if strings.TrimSpace(projectName) == "" {
+		projectName = fmt.Sprintf("%s %d", projectPrefix, time.Now().UnixNano())
+	}
 	templatePath := filepath.Join(repoRootPath, testTemplate)
 	runGhCommand(t,
 		"templater", "apply",
@@ -58,17 +63,21 @@ func TestApplyTemplateE2E(t *testing.T) {
 		t.Fatalf("project %q not found after creation", projectName)
 	}
 	t.Cleanup(func() {
-		deleteProject(t, projectID)
+		_, err := runGhCommandAllowError("templater", "delete",
+			"--org", testOrg,
+			"--project", projectName,
+			"--issues-repo", testRepo,
+			"--template", templatePath,
+		)
+		if err != nil && !strings.Contains(err.Error(), "not found") {
+			t.Fatalf("cleanup delete failed: %v", err)
+		}
 	})
 
 	milestoneNumber := lookupSmokeMilestoneNumber(t)
 	if milestoneNumber == "" {
 		t.Fatalf("expected %s milestone to exist", smokeMilestoneTitle)
 	}
-	t.Cleanup(func() {
-		deleteSmokeMilestone(t, milestoneNumber)
-	})
-
 	newIssue := detectNewSmokeIssue(t, beforeIssues)
 	if newIssue.ID == "" {
 		t.Fatalf("expected a new smoke issue to be created")
@@ -76,9 +85,71 @@ func TestApplyTemplateE2E(t *testing.T) {
 	if newIssue.Milestone == nil || newIssue.Milestone.Title != smokeMilestoneTitle {
 		t.Fatalf("smoke issue missing milestone: %+v", newIssue.Milestone)
 	}
-	t.Cleanup(func() {
-		deleteIssue(t, newIssue.ID)
-	})
+	assertProjectFieldValue(t, projectID, newIssue.ID, smokeFieldName, smokeFieldValue)
+}
+
+func assertProjectFieldValue(t *testing.T, projectID, issueID, fieldName, expected string) {
+	t.Helper()
+	const query = `query($projectId:ID!, $fieldName:String!) {
+  node(id:$projectId) {
+    ... on ProjectV2 {
+      items(first:50) {
+        nodes {
+          content {
+            __typename
+            ... on Issue { id }
+          }
+          fieldValueByName(name:$fieldName) {
+            __typename
+            ... on ProjectV2ItemFieldTextValue { text }
+          }
+        }
+      }
+    }
+  }
+}`
+	output := runGhCommand(t, "api", "graphql",
+		"-f", fmt.Sprintf("query=%s", query),
+		"-F", fmt.Sprintf("projectId=%s", projectID),
+		"-F", fmt.Sprintf("fieldName=%s", fieldName),
+	)
+	var resp struct {
+		Data struct {
+			Node struct {
+				Items struct {
+					Nodes []struct {
+						Content struct {
+							Typename string `json:"__typename"`
+							ID       string `json:"id"`
+						} `json:"content"`
+						FieldValue struct {
+							Typename string `json:"__typename"`
+							Text     string `json:"text"`
+						} `json:"fieldValueByName"`
+					} `json:"nodes"`
+				} `json:"items"`
+			} `json:"node"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		t.Fatalf("parse project items: %v", err)
+	}
+	for _, node := range resp.Data.Node.Items.Nodes {
+		if node.Content.Typename != "Issue" {
+			continue
+		}
+		if node.Content.ID != issueID {
+			continue
+		}
+		if node.FieldValue.Typename != "ProjectV2ItemFieldTextValue" {
+			t.Fatalf("unexpected field type %s", node.FieldValue.Typename)
+		}
+		if node.FieldValue.Text != expected {
+			t.Fatalf("expected field %s to equal %q, got %q", fieldName, expected, node.FieldValue.Text)
+		}
+		return
+	}
+	t.Fatalf("issue %s not found in project items", issueID)
 }
 
 func lookupProjectID(t *testing.T, projectName string) string {
@@ -87,19 +158,6 @@ func lookupProjectID(t *testing.T, projectName string) string {
 		return id
 	}
 	return queryProjects(t, "user", projectName)
-}
-
-func deleteProject(t *testing.T, projectID string) {
-	t.Helper()
-	const mutation = `mutation($projectId:ID!) {
-	  deleteProjectV2(input:{projectId:$projectId}) {
-	    clientMutationId
-	  }
-	}`
-	_ = runGhCommand(t, "api", "graphql",
-		"-f", fmt.Sprintf("query=%s", mutation),
-		"-F", fmt.Sprintf("projectId=%s", projectID),
-	)
 }
 
 type smokeIssue struct {

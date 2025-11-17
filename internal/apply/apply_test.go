@@ -3,19 +3,28 @@ package apply
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/github/gh-templater/internal/github"
 )
 
 type fakeClient struct {
-	createdProject github.ProjectInfo
-	createdIssues  []string
-	milestones     []string
-	addedToProject []string
-	labels         []string
-	projectFields  map[string]github.ProjectField
-	fieldUpdates   []map[string]interface{}
+	createdProject    github.ProjectInfo
+	createdIssues     []string
+	milestones        []string
+	addedToProject    []string
+	labels            []string
+	projectFields     map[string]github.ProjectField
+	fieldUpdates      []map[string]interface{}
+	findProject       github.ProjectInfo
+	findProjectErr    error
+	deletedProjects   []string
+	issueCatalog      map[string][]github.IssueInfo
+	milestoneCatalog  map[string]github.MilestoneInfo
+	deletedIssues     []string
+	deletedMilestones []int
+	deletedLabels     []string
 }
 
 func (f *fakeClient) CreateProject(owner, title string) (github.ProjectInfo, error) {
@@ -68,10 +77,55 @@ func (f *fakeClient) UpdateProjectItemField(projectID, itemID string, fieldID st
 	return nil
 }
 
+func (f *fakeClient) FindProject(owner, title string) (github.ProjectInfo, error) {
+	if f.findProjectErr != nil {
+		return github.ProjectInfo{}, f.findProjectErr
+	}
+	return f.findProject, nil
+}
+
+func (f *fakeClient) DeleteProject(projectID string) error {
+	f.deletedProjects = append(f.deletedProjects, projectID)
+	return nil
+}
+
+func (f *fakeClient) FindMilestone(repo, title string) (github.MilestoneInfo, error) {
+	if info, ok := f.milestoneCatalog[title]; ok {
+		return info, nil
+	}
+	return github.MilestoneInfo{}, fmt.Errorf("%w", github.ErrMilestoneNotFound)
+}
+
+func (f *fakeClient) DeleteMilestone(repo string, number int) error {
+	f.deletedMilestones = append(f.deletedMilestones, number)
+	return nil
+}
+
+func (f *fakeClient) FindIssues(repo, title string) ([]github.IssueInfo, error) {
+	if f.issueCatalog == nil {
+		return nil, nil
+	}
+	return f.issueCatalog[title], nil
+}
+
+func (f *fakeClient) DeleteIssue(issueID string) error {
+	f.deletedIssues = append(f.deletedIssues, issueID)
+	return nil
+}
+
+func (f *fakeClient) DeleteLabel(repo, name string) error {
+	f.deletedLabels = append(f.deletedLabels, repo+":"+name)
+	return nil
+}
+
 func TestApplyValidTemplate(t *testing.T) {
 	tplPath := t.TempDir() + "/template.yaml"
 	content := `name: Demo
-readme: some readme
+project:
+  readme: some readme
+  fields:
+    - name: Status
+      data_type: TEXT
 milestones:
   - title: Kickoff
 issues:
@@ -156,6 +210,24 @@ issues:
 	}
 }
 
+func TestApplySkipsProjectWhenTemplateMissingProjectBlock(t *testing.T) {
+	tplPath := t.TempDir() + "/template.yaml"
+	content := `name: Demo
+labels:
+  - name: docs
+    color: "#123456"
+`
+	writeFile(tplPath, content, t)
+	client := &fakeClient{}
+	opts := Options{Org: "acme", ProjectName: "Demo", IssuesRepo: "acme/repo", Template: tplPath}
+	if err := Apply(opts, client); err != nil {
+		t.Fatalf("apply returned error: %v", err)
+	}
+	if client.createdProject.ID != "" {
+		t.Fatalf("expected project creation to be skipped when template lacks project block")
+	}
+}
+
 func TestParseSections(t *testing.T) {
 	sections, err := ParseSections("labels, issues")
 	if err != nil {
@@ -172,11 +244,13 @@ func TestParseSections(t *testing.T) {
 func TestApplySetsIssueFields(t *testing.T) {
 	tplPath := t.TempDir() + "/template.yaml"
 	content := `name: Demo
-fields:
-  - name: Priority
-    data_type: SINGLE_SELECT
-    options:
-      - name: High
+project:
+  readme: README
+  fields:
+    - name: Priority
+      data_type: SINGLE_SELECT
+      options:
+        - name: High
 milestones:
   - title: Cycle
 issues:
@@ -197,6 +271,137 @@ issues:
 	}
 	if _, ok := client.projectFields["Priority"]; !ok {
 		t.Fatalf("expected Priority field to be created")
+	}
+}
+
+func TestBuildFieldValue(t *testing.T) {
+	singleSelectField := github.ProjectField{
+		DataType: "SINGLE_SELECT",
+		Options: map[string]github.ProjectFieldOption{
+			"High": {ID: "opt-high", Name: "High"},
+		},
+	}
+	tests := []struct {
+		name    string
+		field   github.ProjectField
+		input   string
+		want    map[string]interface{}
+		wantErr bool
+	}{
+		{name: "text", field: github.ProjectField{DataType: "TEXT"}, input: "ready", want: map[string]interface{}{"text": "ready"}},
+		{name: "number", field: github.ProjectField{DataType: "NUMBER"}, input: "42.5", want: map[string]interface{}{"number": 42.5}},
+		{name: "blank number", field: github.ProjectField{DataType: "NUMBER"}, input: " ", want: map[string]interface{}{"number": 0.0}},
+		{name: "invalid number", field: github.ProjectField{DataType: "NUMBER"}, input: "abc", wantErr: true},
+		{name: "date", field: github.ProjectField{DataType: "DATE"}, input: "2024-01-02", want: map[string]interface{}{"date": "2024-01-02"}},
+		{name: "single select", field: singleSelectField, input: "High", want: map[string]interface{}{"singleSelectOptionId": "opt-high"}},
+		{name: "missing option", field: singleSelectField, input: "Low", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := buildFieldValue(tt.field, tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("unexpected field value: %+v", got)
+			}
+		})
+	}
+}
+
+func TestApplyIssueFieldsValidation(t *testing.T) {
+	client := &fakeClient{}
+	fields := map[string]github.ProjectField{
+		"Spec": {ID: "f1", Name: "Spec", DataType: "TEXT", Options: map[string]github.ProjectFieldOption{}},
+	}
+	if err := applyIssueFields(map[string]string{"unknown": "foo"}, "proj", "item", fields, client); err == nil {
+		t.Fatalf("expected error for missing field metadata")
+	}
+	if err := applyIssueFields(map[string]string{"Spec": "ready"}, "proj", "item", nil, client); err == nil {
+		t.Fatalf("expected error when no project fields available")
+	}
+	if err := applyIssueFields(map[string]string{"Spec": "ready"}, "proj", "item", fields, client); err != nil {
+		t.Fatalf("unexpected error applying field: %v", err)
+	}
+	if len(client.fieldUpdates) != 1 {
+		t.Fatalf("expected a single field update, got %d", len(client.fieldUpdates))
+	}
+	if !reflect.DeepEqual(client.fieldUpdates[0], map[string]interface{}{"text": "ready"}) {
+		t.Fatalf("unexpected update payload: %+v", client.fieldUpdates[0])
+	}
+}
+
+func TestDeleteProject(t *testing.T) {
+	client := &fakeClient{findProject: github.ProjectInfo{ID: "proj-123", URL: "https://example.com/project/proj-123"}}
+	opts := DeleteOptions{Org: "acme", ProjectName: "Demo", Sections: Sections{Project: true}}
+	if err := Delete(opts, client); err != nil {
+		t.Fatalf("delete returned error: %v", err)
+	}
+	if len(client.deletedProjects) != 1 || client.deletedProjects[0] != "proj-123" {
+		t.Fatalf("expected project deletion, got %+v", client.deletedProjects)
+	}
+}
+
+func TestDeleteProjectPropagatesLookupError(t *testing.T) {
+	client := &fakeClient{findProjectErr: fmt.Errorf("project not found")}
+	opts := DeleteOptions{Org: "acme", ProjectName: "Missing", Sections: Sections{Project: true}}
+	if err := Delete(opts, client); err == nil {
+		t.Fatalf("expected error when project lookup fails")
+	}
+}
+
+func TestDeleteIssuesAndMilestones(t *testing.T) {
+	tplPath := t.TempDir() + "/template.yaml"
+	content := `name: Demo
+milestones:
+  - title: Smoke Cycle
+issues:
+  - title: Smoke Issue
+    labels: [smoke-test]
+    milestone: Smoke Cycle
+`
+	writeFile(tplPath, content, t)
+	client := &fakeClient{
+		issueCatalog: map[string][]github.IssueInfo{
+			"Smoke Issue": {
+				{ID: "issue-1", Title: "Smoke Issue", Labels: []string{"smoke-test"}, Milestone: "Smoke Cycle"},
+			},
+		},
+		milestoneCatalog: map[string]github.MilestoneInfo{
+			"Smoke Cycle": {Number: 42, Title: "Smoke Cycle"},
+		},
+	}
+	opts := DeleteOptions{IssuesRepo: "acme/repo", Template: tplPath, Sections: Sections{Issues: true, Milestones: true}}
+	if err := Delete(opts, client); err != nil {
+		t.Fatalf("delete returned error: %v", err)
+	}
+	if len(client.deletedIssues) != 1 || client.deletedIssues[0] != "issue-1" {
+		t.Fatalf("expected issue deletion, got %+v", client.deletedIssues)
+	}
+	if len(client.deletedMilestones) != 1 || client.deletedMilestones[0] != 42 {
+		t.Fatalf("expected milestone deletion, got %+v", client.deletedMilestones)
+	}
+}
+
+func TestDeleteLabels(t *testing.T) {
+	tplPath := t.TempDir() + "/template.yaml"
+	content := `labels:
+  - name: smoke-test
+`
+	writeFile(tplPath, content, t)
+	client := &fakeClient{}
+	opts := DeleteOptions{IssuesRepo: "acme/repo", Template: tplPath, Sections: Sections{Labels: true}}
+	if err := Delete(opts, client); err != nil {
+		t.Fatalf("delete returned error: %v", err)
+	}
+	if len(client.deletedLabels) != 1 || client.deletedLabels[0] != "acme/repo:smoke-test" {
+		t.Fatalf("expected label deletion, got %+v", client.deletedLabels)
 	}
 }
 

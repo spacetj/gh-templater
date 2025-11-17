@@ -79,6 +79,11 @@ func Apply(opts Options, client github.Client) error {
 	if err != nil {
 		return err
 	}
+	projectConfig := tpl.Project
+	if sections.Project && projectConfig == nil {
+		fmt.Println("Template does not define a project block; skipping project creation")
+		sections.Project = false
+	}
 
 	if sections.Labels {
 		for _, label := range tpl.Labels {
@@ -96,11 +101,11 @@ func Apply(opts Options, client github.Client) error {
 			return fmt.Errorf("create project: %w", err)
 		}
 
-		if err := client.UpdateProjectReadme(project.ID, tpl.Readme); err != nil {
+		if err := client.UpdateProjectReadme(project.ID, projectConfig.Readme); err != nil {
 			return err
 		}
 
-		fieldTemplates := convertFieldTemplates(tpl.Fields)
+		fieldTemplates := convertFieldTemplates(projectConfig.Fields)
 		projectFields, err = client.EnsureProjectFields(project.ID, fieldTemplates)
 		if err != nil {
 			return fmt.Errorf("ensure project fields: %w", err)
@@ -164,8 +169,9 @@ func convertFieldTemplates(fields []template.TemplateField) []github.FieldTempla
 	var result []github.FieldTemplate
 	for _, field := range fields {
 		ft := github.FieldTemplate{
-			Name:     field.Name,
-			DataType: strings.ToUpper(field.DataType),
+			Name:        field.Name,
+			DataType:    strings.ToUpper(field.DataType),
+			Description: field.Description,
 		}
 		for _, opt := range field.Options {
 			ft.Options = append(ft.Options, github.FieldOption{Name: opt.Name, Color: opt.Color, Description: opt.Description})
@@ -239,7 +245,7 @@ func buildFieldValue(field github.ProjectField, raw string) (map[string]interfac
 		return map[string]interface{}{"text": raw}, nil
 	case "NUMBER":
 		if strings.TrimSpace(raw) == "" {
-			return map[string]interface{}{"number": 0}, nil
+			return map[string]interface{}{"number": 0.0}, nil
 		}
 		val, err := strconv.ParseFloat(raw, 64)
 		if err != nil {

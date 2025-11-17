@@ -132,3 +132,114 @@ func TestEnsureLabelCreatesWhenMissing(t *testing.T) {
 		t.Fatalf("expected sanitized color in create call: %+v", runner.calls[1].args)
 	}
 }
+
+func TestFindProjectOrganization(t *testing.T) {
+	runner := &fakeRunner{responses: []string{
+		`{"data":{"organization":{"projectsV2":{"nodes":[{"id":"P1","title":"Demo","number":4,"url":"https://example.com"}]}}}}`,
+	}}
+	client := NewCLIClient(runner)
+	project, err := client.FindProject("octo-org", "Demo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if project.ID != "P1" || project.Number != 4 {
+		t.Fatalf("unexpected project info: %+v", project)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected single query call, got %d", len(runner.calls))
+	}
+}
+
+func TestFindProjectFallsBackToUser(t *testing.T) {
+	runner := &fakeRunner{
+		responses: []string{
+			`{"data":{"user":{"projectsV2":{"nodes":[{"id":"P2","title":"Demo","number":7,"url":"https://example.com/demo"}]}}}}`,
+		},
+		errs: map[int]error{
+			1: errors.New("Could not resolve to an Organization with the login of \"octo-user\"."),
+		},
+	}
+	client := NewCLIClient(runner)
+	project, err := client.FindProject("octo-user", "Demo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if project.ID != "P2" || project.Number != 7 {
+		t.Fatalf("unexpected project info: %+v", project)
+	}
+	if len(runner.calls) != 2 {
+		t.Fatalf("expected org + user queries")
+	}
+}
+
+func TestDeleteProject(t *testing.T) {
+	runner := &fakeRunner{}
+	client := NewCLIClient(runner)
+	if err := client.DeleteProject("PRJ_ID"); err != nil {
+		t.Fatalf("unexpected error deleting project: %v", err)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected mutation call")
+	}
+}
+
+func TestFindMilestone(t *testing.T) {
+	runner := &fakeRunner{responses: []string{`[{"title":"Smoke Cycle","number":42}]`}}
+	client := NewCLIClient(runner)
+	info, err := client.FindMilestone("acme/repo", "Smoke Cycle")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.Number != 42 {
+		t.Fatalf("unexpected milestone info: %+v", info)
+	}
+}
+
+func TestDeleteMilestone(t *testing.T) {
+	runner := &fakeRunner{}
+	client := NewCLIClient(runner)
+	if err := client.DeleteMilestone("acme/repo", 5); err != nil {
+		t.Fatalf("delete milestone failed: %v", err)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected API call")
+	}
+}
+
+func TestFindIssues(t *testing.T) {
+	response := `{"data":{"search":{"nodes":[{"id":"ISSUE_ID","title":"Smoke","number":12,"url":"https://example.com/issues/12","repository":{"nameWithOwner":"acme/repo"},"milestone":{"title":"Smoke Cycle"},"labels":{"nodes":[{"name":"smoke-test"}]}}]}}}`
+	runner := &fakeRunner{responses: []string{response}}
+	client := NewCLIClient(runner)
+	issues, err := client.FindIssues("acme/repo", "Smoke")
+	if err != nil {
+		t.Fatalf("find issues failed: %v", err)
+	}
+	if len(issues) != 1 || issues[0].ID != "ISSUE_ID" {
+		t.Fatalf("unexpected issues: %+v", issues)
+	}
+	if issues[0].Milestone != "Smoke Cycle" || len(issues[0].Labels) != 1 {
+		t.Fatalf("unexpected issue metadata: %+v", issues[0])
+	}
+}
+
+func TestDeleteIssue(t *testing.T) {
+	runner := &fakeRunner{}
+	client := NewCLIClient(runner)
+	if err := client.DeleteIssue("ISSUE_ID"); err != nil {
+		t.Fatalf("delete issue failed: %v", err)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected single mutation call")
+	}
+}
+
+func TestDeleteLabel(t *testing.T) {
+	runner := &fakeRunner{}
+	client := NewCLIClient(runner)
+	if err := client.DeleteLabel("acme/repo", "smoke-test"); err != nil {
+		t.Fatalf("delete label failed: %v", err)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected API call")
+	}
+}

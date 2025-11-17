@@ -31,6 +31,8 @@ jobs:
   e2e-tests:
     needs: unit-tests
     runs-on: ubuntu-latest
+    env:
+      GH_TEMPLATER_E2E_PROJECT: gh-templater e2e ${{ github.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,3 +46,17 @@ jobs:
         env:
           GH_TEMPLATER_TOKEN: ${{ secrets.GH_TEMPLATER_TOKEN }}
         run: go test ./internal/e2e -run TestApplyTemplateE2E -count=1
+
+      - name: Cleanup E2E artifacts
+        if: always()
+        env:
+          GH_TEMPLATER_TOKEN: ${{ secrets.GH_TEMPLATER_TOKEN }}
+        run: |
+          if [ -z "${GH_TEMPLATER_TOKEN}" ]; then
+            echo "GH_TEMPLATER_TOKEN not set; skipping cleanup"
+            exit 0
+          fi
+          export GH_TOKEN="${GH_TEMPLATER_TOKEN}"
+          export GITHUB_TOKEN="${GH_TEMPLATER_TOKEN}"
+          gh extension install . >/dev/null 2>&1 || gh extension upgrade gh-templater >/dev/null 2>&1 || true
+          gh templater delete --org spacetj --project "${GH_TEMPLATER_E2E_PROJECT}" --issues-repo spacetj/gh-templater --template templates/e2e-smoke.yaml || true

@@ -75,20 +75,21 @@ Templates are YAML files that describe the project README, labels, custom projec
 
 ```yaml
 name: Reliability Sprint
-readme: |
-  # Reliability Sprint
-  Tracking our availability goals.
+project:
+  readme: |
+    # Reliability Sprint
+    Tracking our availability goals.
+  fields:
+    - name: Spec State
+      data_type: SINGLE_SELECT
+      description: Spec kit workflow
+      options:
+        - name: Draft
+          color: YELLOW
 labels:
   - name: spec
     color: 9B59B6
     description: Spec-driven work
-fields:
-  - name: Spec State
-    data_type: SINGLE_SELECT
-    description: Spec kit workflow
-    options:
-      - name: Draft
-        color: YELLOW
 milestones:
   - title: Hardening
     description: Improve error budgets
@@ -104,11 +105,32 @@ issues:
 
 See [`docs/templates.md`](docs/templates.md) for the full schema, including how to scope runs with `--sections`. For a full Shape Up project bootstrap, try `templates/shapeup-launchpad.yaml` which mirrors the legacy `bootstrap-project.sh` content.
 
+Define project-specific metadata under `project.fields`. Each entry declares the `data_type`, description, and optional select options. When issues include a `fields` map, `gh templater apply` ensures those Project V2 fields (and any missing single-select options) exist, then sets the requested values on every newly created item so dashboards stay consistent. Templates that omit the `project` block can still apply labels, milestones, or issues without provisioning a new project.
+
+### ✂️ Selective sections
+
+Both `apply` and `delete` accept `--sections` so you can focus on exactly the parts you need: `project`, `labels`, `milestones`, `issues`, or `all`. Want to retry label sync without touching the project? Run `gh templater apply --sections labels`. Need to tear down only the issues created from a template? Use `gh templater delete --sections issues --template … --issues-repo …` to surgically clean them up.
+
 ## 🧰 Commands
 
 - `gh templater apply`: Apply a YAML template to an organization and issues repository.
+- `gh templater delete`: Remove the generated project plus template-defined labels, milestones, and issues (`--template` + `--issues-repo` control what gets cleaned, and `--sections` narrows scope).
 
-Run `gh templater apply --help` to see the complete flag list.
+Run `gh templater <command> --help` to see the complete flag list.
+
+## 🧹 Cleanup Flow
+
+Use the `delete` command once a test project or automation run has finished to keep your org tidy:
+
+```mermaid
+graph LR
+  T[Template 🧾] -->|sections project,labels,milestones,issues| Clean[gh templater delete 🧹]
+  Clean --> L[Remove Labels]
+  Clean --> M[Delete Milestones]
+  Clean --> I[Close Issues]
+  Clean --> P[Delete Project]
+  P --> Org[Org stays clutter-free ✨]
+```
 
 ## 🛠️ Development
 

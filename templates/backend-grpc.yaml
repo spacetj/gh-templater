@@ -1,25 +1,52 @@
 name: Backend gRPC Service
-readme: |
-  # Backend gRPC Service Template
+project:
+  readme: |
+    # Backend gRPC Service Template
 
-  This template bootstraps a production-grade Go microservice using gRPC. It assumes
-  GitHub Actions for CI, Terraform for infrastructure as code, and Kubernetes for runtime orchestration.
+    This template bootstraps a production-grade Go microservice using gRPC. It assumes
+    GitHub Actions for CI, Terraform for infrastructure as code, and Kubernetes for runtime orchestration.
 
-  ## Included milestones
-  - Architecture & repo readiness
-  - Service implementation
-  - Observability and operations
+    ## Included milestones
+    - Architecture & repo readiness
+    - Service implementation
+    - Observability and operations
 
-  ## Useful docs
-  - Go modules: https://go.dev/doc/modules
-  - gRPC in Go: https://grpc.io/docs/languages/go/basics/
-  - GitHub Actions: https://docs.github.com/actions
-  - SRE golden signals: https://sre.google/sre-book/monitoring-distributed-systems/
+    ## Useful docs
+    - Go modules: https://go.dev/doc/modules
+    - gRPC in Go: https://grpc.io/docs/languages/go/basics/
+    - GitHub Actions: https://docs.github.com/actions
+    - SRE golden signals: https://sre.google/sre-book/monitoring-distributed-systems/
 
-  ## Expected outcomes
-  - CI/CD pipelines with linting, unit tests, contract tests, and container builds
-  - Production-ready telemetry (metrics, tracing, structured logging)
-  - Hardened runtime with SLOs, runbooks, and dashboards
+    ## Expected outcomes
+    - CI/CD pipelines with linting, unit tests, contract tests, and container builds
+    - Production-ready telemetry (metrics, tracing, structured logging)
+    - Hardened runtime with SLOs, runbooks, and dashboards
+  fields:
+    - name: Priority
+      data_type: SINGLE_SELECT
+      description: Communicates urgency
+      options:
+        - name: High
+          color: RED
+        - name: Medium
+          color: YELLOW
+        - name: Low
+          color: GREEN
+    - name: Work Type
+      data_type: SINGLE_SELECT
+      description: Tracks the type of contribution
+      options:
+        - name: Feature
+          color: GREEN
+        - name: Infrastructure
+          color: BLUE
+        - name: Reliability
+          color: ORANGE
+        - name: Documentation
+          color: PURPLE
+    - name: Spec Link
+      data_type: TEXT
+      description: Pointer to the canonical doc/spec for the task
 
 labels:
   - name: design
@@ -52,33 +79,6 @@ labels:
   - name: reliability
     color: C0392B
     description: Reliability and incident readiness
-
-fields:
-  - name: Priority
-    data_type: SINGLE_SELECT
-    description: Communicates urgency
-    options:
-      - name: High
-        color: RED
-      - name: Medium
-        color: YELLOW
-      - name: Low
-        color: GREEN
-  - name: Work Type
-    data_type: SINGLE_SELECT
-    description: Tracks the type of contribution
-    options:
-      - name: Feature
-        color: GREEN
-      - name: Infrastructure
-        color: BLUE
-      - name: Reliability
-        color: ORANGE
-      - name: Documentation
-        color: PURPLE
-  - name: Spec Link
-    data_type: TEXT
-    description: Pointer to the canonical doc/spec for the task
 
 milestones:
   - title: Architecture & Bootstrap

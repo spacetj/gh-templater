@@ -10,13 +10,14 @@ import (
 func TestLoadTemplate(t *testing.T) {
 	path := t.TempDir() + "/template.yaml"
 	content := `name: Sample
-readme: README content
-fields:
-  - name: Spec State
-    data_type: SINGLE_SELECT
-    options:
-      - name: Draft
-        color: yellow
+project:
+  readme: README content
+  fields:
+    - name: Spec State
+      data_type: SINGLE_SELECT
+      options:
+        - name: Draft
+          color: yellow
 milestones:
   - title: Kickoff
     description: Start the project
@@ -46,6 +47,12 @@ issues:
 	if tpl.Name != "Sample" {
 		t.Fatalf("expected name 'Sample', got %q", tpl.Name)
 	}
+	if tpl.Project == nil {
+		t.Fatalf("expected project block to be parsed")
+	}
+	if tpl.Project.Readme != "README content" {
+		t.Fatalf("expected readme parsed, got %q", tpl.Project.Readme)
+	}
 
 	if len(tpl.Milestones) != 1 {
 		t.Fatalf("expected 1 milestone, got %d", len(tpl.Milestones))
@@ -54,8 +61,8 @@ issues:
 	if len(tpl.Issues) != 1 {
 		t.Fatalf("expected 1 issue, got %d", len(tpl.Issues))
 	}
-	if len(tpl.Fields) != 1 || tpl.Fields[0].Name != "Spec State" {
-		t.Fatalf("expected field parsed, got %+v", tpl.Fields)
+	if tpl.Project == nil || len(tpl.Project.Fields) != 1 || tpl.Project.Fields[0].Name != "Spec State" {
+		t.Fatalf("expected field parsed, got %+v", tpl.Project)
 	}
 	if tpl.Issues[0].Doc.Source != "docs/specs/step-1.md" {
 		t.Fatalf("expected doc context parsed, got %+v", tpl.Issues[0].Doc)

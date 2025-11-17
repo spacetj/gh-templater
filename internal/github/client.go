@@ -19,14 +19,22 @@ type Client interface {
 	CreateIssue(repo string, issue TemplateIssueWithResolvedMilestone) (string, error)
 	AddItemToProject(owner string, projectNumber int, itemURL string) (string, error)
 	EnsureLabel(repo, name, color, description string) error
+	DeleteLabel(repo, name string) error
 	EnsureProjectFields(projectID string, fields []FieldTemplate) (map[string]ProjectField, error)
 	UpdateProjectItemField(projectID, itemID, fieldID string, value map[string]interface{}) error
+	FindProject(owner, title string) (ProjectInfo, error)
+	DeleteProject(projectID string) error
+	FindMilestone(repo, title string) (MilestoneInfo, error)
+	DeleteMilestone(repo string, number int) error
+	FindIssues(repo, title string) ([]IssueInfo, error)
+	DeleteIssue(issueID string) error
 }
 
 type FieldTemplate struct {
-	Name     string
-	DataType string
-	Options  []FieldOption
+	Name        string
+	DataType    string
+	Description string
+	Options     []FieldOption
 }
 
 type FieldOption struct {
@@ -36,10 +44,11 @@ type FieldOption struct {
 }
 
 type ProjectField struct {
-	ID       string
-	Name     string
-	DataType string
-	Options  map[string]ProjectFieldOption
+	ID          string
+	Name        string
+	DataType    string
+	Description string
+	Options     map[string]ProjectFieldOption
 }
 
 type ProjectFieldOption struct {
@@ -61,6 +70,20 @@ type ProjectInfo struct {
 	ID     string
 	Number int
 	URL    string
+}
+
+type MilestoneInfo struct {
+	Number int
+	Title  string
+}
+
+type IssueInfo struct {
+	ID        string
+	Number    int
+	Title     string
+	URL       string
+	Milestone string
+	Labels    []string
 }
 
 // CLIClient implements Client using the GitHub CLI.
@@ -167,9 +190,213 @@ func (c *CLIClient) AddItemToProject(owner string, projectNumber int, itemURL st
 	return resp.ID, nil
 }
 
+func (c *CLIClient) FindProject(owner, title string) (ProjectInfo, error) {
+	project, err := c.findProjectForOwnerType("organization", owner, title)
+	if err == nil {
+		return project, nil
+	}
+	if errors.Is(err, ErrOrganizationNotFound) {
+		return c.findProjectForOwnerType("user", owner, title)
+	}
+	return ProjectInfo{}, err
+}
+
+func (c *CLIClient) findProjectForOwnerType(ownerType, owner, title string) (ProjectInfo, error) {
+	query := fmt.Sprintf(`query($login:String!, $search:String!) {
+  %s(login:$login) {
+    projectsV2(first: 20, query: $search) {
+      nodes { id title number url }
+    }
+  }
+}`, ownerType)
+	args := []string{"api", "graphql", "-f", "query=" + query, "-F", "login=" + owner, "-F", "search=" + title}
+	output, err := c.runner.Run("gh", args...)
+	if err != nil {
+		switch ownerType {
+		case "organization":
+			if strings.Contains(err.Error(), "Could not resolve to an Organization") {
+				return ProjectInfo{}, fmt.Errorf("%w: %s", ErrOrganizationNotFound, owner)
+			}
+		case "user":
+			if strings.Contains(err.Error(), "Could not resolve to a User") {
+				return ProjectInfo{}, fmt.Errorf("%w: %s", ErrUserNotFound, owner)
+			}
+		}
+		return ProjectInfo{}, fmt.Errorf("query projects: %w", err)
+	}
+	type projectNode struct {
+		ID     string `json:"id"`
+		Title  string `json:"title"`
+		Number int    `json:"number"`
+		URL    string `json:"url"`
+	}
+	var resp struct {
+		Data struct {
+			Organization *struct {
+				Projects struct {
+					Nodes []projectNode `json:"nodes"`
+				} `json:"projectsV2"`
+			} `json:"organization"`
+			User *struct {
+				Projects struct {
+					Nodes []projectNode `json:"nodes"`
+				} `json:"projectsV2"`
+			} `json:"user"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		return ProjectInfo{}, fmt.Errorf("parse project query: %w", err)
+	}
+	var nodes []projectNode
+	switch ownerType {
+	case "organization":
+		if resp.Data.Organization != nil {
+			nodes = resp.Data.Organization.Projects.Nodes
+		}
+	case "user":
+		if resp.Data.User != nil {
+			nodes = resp.Data.User.Projects.Nodes
+		}
+	}
+	for _, node := range nodes {
+		if node.Title == title {
+			return ProjectInfo{ID: node.ID, Number: node.Number, URL: node.URL}, nil
+		}
+	}
+	return ProjectInfo{}, fmt.Errorf("%w: %s", ErrProjectNotFound, title)
+}
+
+func (c *CLIClient) DeleteProject(projectID string) error {
+	mutation := `mutation($projectId:ID!) {
+  deleteProjectV2(input:{projectId:$projectId}) {
+    clientMutationId
+  }
+}`
+	if _, err := c.runGraphQL(mutation, map[string]interface{}{"projectId": projectID}); err != nil {
+		return fmt.Errorf("delete project: %w", err)
+	}
+	return nil
+}
+
+func (c *CLIClient) FindMilestone(repo, title string) (MilestoneInfo, error) {
+	path := fmt.Sprintf("repos/%s/milestones?state=all&per_page=100", repo)
+	output, err := c.runner.Run("gh", "api", path)
+	if err != nil {
+		return MilestoneInfo{}, fmt.Errorf("list milestones: %w", err)
+	}
+	var milestones []struct {
+		Title  string `json:"title"`
+		Number int    `json:"number"`
+	}
+	if err := json.Unmarshal([]byte(output), &milestones); err != nil {
+		return MilestoneInfo{}, fmt.Errorf("parse milestones: %w", err)
+	}
+	for _, m := range milestones {
+		if m.Title == title {
+			return MilestoneInfo{Title: m.Title, Number: m.Number}, nil
+		}
+	}
+	return MilestoneInfo{}, fmt.Errorf("%w: %s", ErrMilestoneNotFound, title)
+}
+
+func (c *CLIClient) DeleteMilestone(repo string, number int) error {
+	path := fmt.Sprintf("repos/%s/milestones/%d", repo, number)
+	if _, err := c.runner.Run("gh", "api", path, "--method", "DELETE"); err != nil {
+		return fmt.Errorf("delete milestone %d: %w", number, err)
+	}
+	return nil
+}
+
+func (c *CLIClient) FindIssues(repo, title string) ([]IssueInfo, error) {
+	query := `query($search:String!) {
+  search(query:$search, type:ISSUE, first:20) {
+    nodes {
+      __typename
+      ... on Issue {
+        id
+        number
+        title
+        url
+        repository { nameWithOwner }
+        milestone { title }
+        labels(first:20) { nodes { name } }
+      }
+    }
+  }
+}`
+	search := fmt.Sprintf("repo:%s in:title %q", repo, title)
+	output, err := c.runGraphQL(query, map[string]interface{}{"search": search})
+	if err != nil {
+		return nil, fmt.Errorf("search issues: %w", err)
+	}
+	var resp struct {
+		Data struct {
+			Search struct {
+				Nodes []struct {
+					ID         string `json:"id"`
+					Title      string `json:"title"`
+					Number     int    `json:"number"`
+					URL        string `json:"url"`
+					Repository struct {
+						NameWithOwner string `json:"nameWithOwner"`
+					} `json:"repository"`
+					Milestone *struct {
+						Title string `json:"title"`
+					} `json:"milestone"`
+					Labels struct {
+						Nodes []struct {
+							Name string `json:"name"`
+						} `json:"nodes"`
+					} `json:"labels"`
+				} `json:"nodes"`
+			} `json:"search"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &resp); err != nil {
+		return nil, fmt.Errorf("parse issue search: %w", err)
+	}
+	var issues []IssueInfo
+	for _, node := range resp.Data.Search.Nodes {
+		if !strings.EqualFold(node.Repository.NameWithOwner, repo) {
+			continue
+		}
+		var labels []string
+		for _, l := range node.Labels.Nodes {
+			labels = append(labels, l.Name)
+		}
+		milestoneTitle := ""
+		if node.Milestone != nil {
+			milestoneTitle = node.Milestone.Title
+		}
+		issues = append(issues, IssueInfo{
+			ID:        node.ID,
+			Number:    node.Number,
+			Title:     node.Title,
+			URL:       node.URL,
+			Milestone: milestoneTitle,
+			Labels:    labels,
+		})
+	}
+	return issues, nil
+}
+
+func (c *CLIClient) DeleteIssue(issueID string) error {
+	mutation := `mutation($issueId:ID!) {
+  deleteIssue(input:{issueId:$issueId}) {
+    clientMutationId
+  }
+}`
+	if _, err := c.runGraphQL(mutation, map[string]interface{}{"issueId": issueID}); err != nil {
+		return fmt.Errorf("delete issue: %w", err)
+	}
+	return nil
+}
+
 var (
-	errOrganizationNotFound = errors.New("organization not found")
-	errUserNotFound         = errors.New("user not found")
+	ErrOrganizationNotFound = errors.New("organization not found")
+	ErrUserNotFound         = errors.New("user not found")
+	ErrProjectNotFound      = errors.New("project not found")
+	ErrMilestoneNotFound    = errors.New("milestone not found")
 )
 
 func (c *CLIClient) lookupOrganizationID(owner string) (string, error) {
@@ -177,7 +404,7 @@ func (c *CLIClient) lookupOrganizationID(owner string) (string, error) {
 	output, err := c.runner.Run("gh", "api", "graphql", "-f", "query="+query, "-F", "login="+owner)
 	if err != nil {
 		if strings.Contains(err.Error(), "Could not resolve to an Organization") {
-			return "", fmt.Errorf("%w: %s", errOrganizationNotFound, owner)
+			return "", fmt.Errorf("%w: %s", ErrOrganizationNotFound, owner)
 		}
 		return "", fmt.Errorf("lookup organization: %w", err)
 	}
@@ -195,7 +422,7 @@ func (c *CLIClient) lookupOrganizationID(owner string) (string, error) {
 	}
 
 	if parsed.Data.Organization.ID == "" {
-		return "", fmt.Errorf("%w: %s", errOrganizationNotFound, owner)
+		return "", fmt.Errorf("%w: %s", ErrOrganizationNotFound, owner)
 	}
 
 	return parsed.Data.Organization.ID, nil
@@ -206,7 +433,7 @@ func (c *CLIClient) lookupOwnerID(owner string) (string, error) {
 	if err == nil {
 		return id, nil
 	}
-	if !errors.Is(err, errOrganizationNotFound) {
+	if !errors.Is(err, ErrOrganizationNotFound) {
 		return "", err
 	}
 	return c.lookupUserID(owner)
@@ -217,7 +444,7 @@ func (c *CLIClient) lookupUserID(owner string) (string, error) {
 	output, err := c.runner.Run("gh", "api", "graphql", "-f", "query="+query, "-F", "login="+owner)
 	if err != nil {
 		if strings.Contains(err.Error(), "Could not resolve to a User") {
-			return "", fmt.Errorf("%w: %s", errUserNotFound, owner)
+			return "", fmt.Errorf("%w: %s", ErrUserNotFound, owner)
 		}
 		return "", fmt.Errorf("lookup user: %w", err)
 	}
@@ -233,7 +460,7 @@ func (c *CLIClient) lookupUserID(owner string) (string, error) {
 		return "", fmt.Errorf("parse user id: %w", err)
 	}
 	if parsed.Data.User.ID == "" {
-		return "", fmt.Errorf("%w: %s", errUserNotFound, owner)
+		return "", fmt.Errorf("%w: %s", ErrUserNotFound, owner)
 	}
 	return parsed.Data.User.ID, nil
 }
@@ -263,6 +490,20 @@ func (c *CLIClient) EnsureLabel(repo, name, color, description string) error {
 	return nil
 }
 
+func (c *CLIClient) DeleteLabel(repo, name string) error {
+	if strings.TrimSpace(name) == "" {
+		return nil
+	}
+	path := fmt.Sprintf("repos/%s/labels/%s", repo, url.PathEscape(name))
+	if _, err := c.runner.Run("gh", "api", path, "--method", "DELETE"); err != nil {
+		if isNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("delete label %q: %w", name, err)
+	}
+	return nil
+}
+
 func sanitizeColor(color string) string {
 	trimmed := strings.TrimSpace(color)
 	trimmed = strings.TrimPrefix(trimmed, "#")
@@ -282,17 +523,30 @@ func (c *CLIClient) EnsureProjectFields(projectID string, fields []FieldTemplate
 	if err != nil {
 		return nil, err
 	}
-	added := false
+	modified := len(current) == 0
 	for _, field := range fields {
-		if _, exists := current[field.Name]; exists {
+		existing, exists := current[field.Name]
+		if !exists {
+			if err := c.createProjectField(projectID, field); err != nil {
+				return nil, err
+			}
+			modified = true
 			continue
 		}
-		if err := c.createProjectField(projectID, field); err != nil {
-			return nil, err
+		if !strings.EqualFold(existing.DataType, field.DataType) {
+			return nil, fmt.Errorf("project field %q already exists with type %s (expected %s)", field.Name, existing.DataType, field.DataType)
 		}
-		added = true
+		if strings.EqualFold(field.DataType, "SINGLE_SELECT") && len(field.Options) > 0 {
+			addedOptions, err := c.ensureProjectFieldOptions(existing, field.Options)
+			if err != nil {
+				return nil, err
+			}
+			if addedOptions {
+				modified = true
+			}
+		}
 	}
-	if added || len(current) == 0 {
+	if modified {
 		return c.fetchProjectFields(projectID)
 	}
 	return current, nil
@@ -303,6 +557,9 @@ func (c *CLIClient) createProjectField(projectID string, field FieldTemplate) er
 		"projectId": projectID,
 		"name":      field.Name,
 		"dataType":  field.DataType,
+	}
+	if strings.TrimSpace(field.Description) != "" {
+		input["description"] = field.Description
 	}
 	if strings.EqualFold(field.DataType, "SINGLE_SELECT") && len(field.Options) > 0 {
 		var options []map[string]string
@@ -328,6 +585,43 @@ func (c *CLIClient) createProjectField(projectID string, field FieldTemplate) er
 	return nil
 }
 
+func (c *CLIClient) ensureProjectFieldOptions(field ProjectField, options []FieldOption) (bool, error) {
+	if len(options) == 0 {
+		return false, nil
+	}
+	added := false
+	for _, opt := range options {
+		if _, exists := field.Options[opt.Name]; exists {
+			continue
+		}
+		if err := c.createProjectFieldOption(field.ID, opt); err != nil {
+			return false, err
+		}
+		added = true
+	}
+	return added, nil
+}
+
+func (c *CLIClient) createProjectFieldOption(fieldID string, option FieldOption) error {
+	input := map[string]interface{}{
+		"fieldId": fieldID,
+		"name":    option.Name,
+	}
+	if strings.TrimSpace(option.Color) != "" {
+		input["color"] = option.Color
+	}
+	if strings.TrimSpace(option.Description) != "" {
+		input["description"] = option.Description
+	}
+	mutation := `mutation($input:CreateProjectV2FieldOptionInput!) {
+  createProjectV2FieldOption(input:$input) { projectV2FieldOption { id } }
+}`
+	if _, err := c.runGraphQL(mutation, map[string]interface{}{"input": input}); err != nil {
+		return fmt.Errorf("create project field option %q: %w", option.Name, err)
+	}
+	return nil
+}
+
 func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectField, error) {
 	query := `query($id:ID!) {
   node(id:$id) {
@@ -339,11 +633,13 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
             id
             name
             dataType
+            description
           }
           ... on ProjectV2SingleSelectField {
             id
             name
             dataType
+            description
             options { id name }
           }
         }
@@ -361,11 +657,12 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
 			Node struct {
 				Fields struct {
 					Nodes []struct {
-						Typename string `json:"__typename"`
-						ID       string `json:"id"`
-						Name     string `json:"name"`
-						DataType string `json:"dataType"`
-						Options  []struct {
+						Typename    string `json:"__typename"`
+						ID          string `json:"id"`
+						Name        string `json:"name"`
+						DataType    string `json:"dataType"`
+						Description string `json:"description"`
+						Options     []struct {
 							ID   string `json:"id"`
 							Name string `json:"name"`
 						} `json:"options"`
@@ -379,7 +676,7 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
 	}
 	fields := make(map[string]ProjectField)
 	for _, node := range resp.Data.Node.Fields.Nodes {
-		pf := ProjectField{ID: node.ID, Name: node.Name, DataType: node.DataType, Options: make(map[string]ProjectFieldOption)}
+		pf := ProjectField{ID: node.ID, Name: node.Name, DataType: node.DataType, Description: node.Description, Options: make(map[string]ProjectFieldOption)}
 		for _, opt := range node.Options {
 			pf.Options[opt.Name] = ProjectFieldOption{ID: opt.ID, Name: opt.Name}
 		}

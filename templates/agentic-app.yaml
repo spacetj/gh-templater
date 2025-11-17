@@ -1,19 +1,50 @@
 name: Agentic Application on Vertex AI + ADK
-readme: |
-  # Agentic Application Template
+project:
+  readme: |
+    # Agentic Application Template
 
-  This template creates a project for building an agent using the Application Development Kit (ADK),
-  Gemini models, and Vertex AI tooling. It emphasizes secure infra setup, evaluation, and launch-readiness.
+    This template creates a project for building an agent using the Application Development Kit (ADK),
+    Gemini models, and Vertex AI tooling. It emphasizes secure infra setup, evaluation, and launch-readiness.
 
-  ## Tracks
-  - Platform & security hardening
-  - Agent implementation and evaluation
-  - Launch & operations
+    ## Tracks
+    - Platform & security hardening
+    - Agent implementation and evaluation
+    - Launch & operations
 
-  ## Reference docs
-  - ADK quickstart: https://ai.google.dev/gemini-api/docs/agent-builder
-  - Vertex AI setup: https://cloud.google.com/vertex-ai/docs/start
-  - Prompt safety: https://ai.google.dev/gemini-api/docs/safety
+    ## Reference docs
+    - ADK quickstart: https://ai.google.dev/gemini-api/docs/agent-builder
+    - Vertex AI setup: https://cloud.google.com/vertex-ai/docs/start
+    - Prompt safety: https://ai.google.dev/gemini-api/docs/safety
+  fields:
+    - name: Priority
+      data_type: SINGLE_SELECT
+      description: Highlights urgency for each issue
+      options:
+        - name: Critical
+          color: RED
+        - name: High
+          color: ORANGE
+        - name: Normal
+          color: GREEN
+    - name: Work Type
+      data_type: SINGLE_SELECT
+      description: Categorizes the task
+      options:
+        - name: Platform
+          color: BLUE
+        - name: Security
+          color: RED
+        - name: Agent Runtime
+          color: PURPLE
+        - name: Data
+          color: GREEN
+        - name: Evaluation
+          color: ORANGE
+        - name: Operations
+          color: GRAY
+    - name: Spec Link
+      data_type: TEXT
+      description: Link to the canonical spec or ADR
 
 labels:
   - name: infra
@@ -55,37 +86,6 @@ labels:
   - name: reliability
     color: 34495E
     description: Reliability hardening work
-
-fields:
-  - name: Priority
-    data_type: SINGLE_SELECT
-    description: Highlights urgency for each issue
-    options:
-      - name: Critical
-        color: RED
-      - name: High
-        color: ORANGE
-      - name: Normal
-        color: GREEN
-  - name: Work Type
-    data_type: SINGLE_SELECT
-    description: Categorizes the task
-    options:
-      - name: Platform
-        color: BLUE
-      - name: Security
-        color: RED
-      - name: Agent Runtime
-        color: PURPLE
-      - name: Data
-        color: GREEN
-      - name: Evaluation
-        color: ORANGE
-      - name: Operations
-        color: GRAY
-  - name: Spec Link
-    data_type: TEXT
-    description: Link to the canonical spec or ADR
 
 milestones:
   - title: Platform & Access

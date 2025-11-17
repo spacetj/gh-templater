@@ -15,11 +15,15 @@ var userHomeDir = os.UserHomeDir
 // Template describes the structure required to create a project, labels, custom fields, milestones, and issues.
 type Template struct {
 	Name       string              `yaml:"name"`
-	Readme     string              `yaml:"readme"`
+	Project    *TemplateProject    `yaml:"project"`
 	Labels     []TemplateLabel     `yaml:"labels"`
-	Fields     []TemplateField     `yaml:"fields"`
 	Milestones []TemplateMilestone `yaml:"milestones"`
 	Issues     []TemplateIssue     `yaml:"issues"`
+}
+
+type TemplateProject struct {
+	Readme string          `yaml:"readme"`
+	Fields []TemplateField `yaml:"fields"`
 }
 
 type TemplateLabel struct {
@@ -50,12 +54,12 @@ type TemplateMilestone struct {
 
 // TemplateIssue defines an issue to be created from the template.
 type TemplateIssue struct {
-	Title     string            `yaml:"title"`
-	Body      string            `yaml:"body"`
-	Labels    []string          `yaml:"labels"`
-	Milestone string            `yaml:"milestone"`
-	Assignees []string          `yaml:"assignees"`
-	Fields    map[string]string `yaml:"fields"`
+	Title     string             `yaml:"title"`
+	Body      string             `yaml:"body"`
+	Labels    []string           `yaml:"labels"`
+	Milestone string             `yaml:"milestone"`
+	Assignees []string           `yaml:"assignees"`
+	Fields    map[string]string  `yaml:"fields"`
 	Doc       TemplateDocContext `yaml:"doc"`
 }
 

@@ -1,19 +1,100 @@
 name: Shape Up Launchpad
-readme: |
-  # Startup Shape Up Launchpad
+project:
+  readme: |
+    # Startup Shape Up Launchpad
 
-  This template mirrors the automation provided by the legacy `bootstrap-project.sh`
-  script. Applying it will:
+    This template mirrors the automation provided by the legacy `bootstrap-project.sh`
+    script. Applying it will:
 
-  - Create a GitHub Project v2 with Shape Up aware custom fields
-  - Sync the full Shape Up label palette (spec, appetite, and work streams)
-  - Provision 15 roadmap milestones that track each Shape Up / Startup step
-  - Open a spec issue for every step, including doc context metadata, field values,
-    milestone alignment, and default labels
+    - Create a GitHub Project v2 with Shape Up aware custom fields
+    - Sync the full Shape Up label palette (spec, appetite, and work streams)
+    - Provision 15 roadmap milestones that track each Shape Up / Startup step
+    - Open a spec issue for every step, including doc context metadata, field values,
+      milestone alignment, and default labels
 
-  Each issue is intended to be refined in spec-kit style and will automatically be
-  added to the project with the right custom-field state once project field support
-  is enabled in `gh-templater`.
+    Each issue is intended to be refined in spec-kit style and will automatically be
+    added to the project with the right custom-field state once project field support
+    is enabled in `gh-templater`.
+  fields:
+    - name: Shape Up Flow
+      data_type: SINGLE_SELECT
+      description: Mirrors Shape Up status from pitch to cooldown
+      options:
+        - name: Pitch
+          color: YELLOW
+          description: Idea waiting for appetite
+        - name: Shaping
+          color: BLUE
+          description: Problem and appetite being shaped
+        - name: Bet
+          color: ORANGE
+          description: Selected for current cycle
+        - name: Build
+          color: GREEN
+          description: Actively being built
+        - name: QA
+          color: PINK
+          description: Testing and polish
+        - name: Cooldown
+          color: PURPLE
+          description: Post-cycle clean-up
+        - name: Done
+          color: GRAY
+          description: Delivered
+    - name: Spec State
+      data_type: SINGLE_SELECT
+      description: Spec-kit lifecycle
+      options:
+        - name: Draft
+          color: YELLOW
+        - name: Review
+          color: ORANGE
+        - name: Ready
+          color: GREEN
+        - name: In Build
+          color: BLUE
+        - name: Complete
+          color: PURPLE
+        - name: Archived
+          color: GRAY
+    - name: Appetite (weeks)
+      data_type: NUMBER
+      description: Shape Up appetite for the work
+    - name: Spec Link
+      data_type: TEXT
+      description: Pointer to local spec or spec-kit artifact
+    - name: Cycle
+      data_type: TEXT
+      description: Shape Up cycle or cooldown window
+    - name: Target Ship Date
+      data_type: DATE
+      description: Target completion date
+    - name: Work Type
+      data_type: SINGLE_SELECT
+      description: Differentiate feature, research, bug, or ops streams
+      options:
+        - name: Feature
+          color: GREEN
+        - name: Research
+          color: BLUE
+        - name: Design
+          color: ORANGE
+        - name: Bug
+          color: RED
+        - name: Tech Debt
+          color: PURPLE
+        - name: Ops
+          color: GRAY
+    - name: Priority
+      data_type: SINGLE_SELECT
+      description: Now / Next / Later triage
+      options:
+        - name: Now
+          color: RED
+        - name: Next
+          color: YELLOW
+        - name: Later
+          color: GRAY
 labels:
   - name: shapeup:pitch
     color: BFD4F2
@@ -108,116 +189,6 @@ labels:
   - name: spec:launchpad
     color: 566573
     description: Launchpad spec automation helper
-fields:
-  - name: Shape Up Flow
-    data_type: SINGLE_SELECT
-    description: Mirrors Shape Up status from pitch to cooldown
-    options:
-      - name: Pitch
-        color: YELLOW
-        description: Idea waiting for appetite
-      - name: Shaping
-        color: BLUE
-        description: Problem and appetite being shaped
-      - name: Bet
-        color: ORANGE
-        description: Selected for current cycle
-      - name: Build
-        color: GREEN
-        description: Actively being built
-      - name: QA
-        color: PINK
-        description: Testing and polish
-      - name: Cooldown
-        color: PURPLE
-        description: Post-cycle clean-up
-      - name: Done
-        color: GRAY
-        description: Delivered
-  - name: Spec State
-    data_type: SINGLE_SELECT
-    description: Spec-kit lifecycle
-    options:
-      - name: Draft
-        color: YELLOW
-      - name: Review
-        color: ORANGE
-      - name: Ready
-        color: GREEN
-      - name: In Build
-        color: BLUE
-      - name: Complete
-        color: PURPLE
-      - name: Archived
-        color: GRAY
-      - name: Step 01 – Vision & Alignment
-        color: BLUE
-      - name: Step 02 – Market Research & Validation
-        color: BLUE
-      - name: Step 03 – Deep User Research
-        color: BLUE
-      - name: Step 04 – Value Proposition & Business Model
-        color: BLUE
-      - name: Step 05 – Solution Ideation
-        color: BLUE
-      - name: Step 06 – Journey Mapping
-        color: BLUE
-      - name: Step 07 – MVP Prioritization
-        color: BLUE
-      - name: Step 08 – Experience Design & Prototype
-        color: BLUE
-      - name: Step 09 – Pre-launch Validation
-        color: BLUE
-      - name: Step 10 – MVP Build
-        color: BLUE
-      - name: Step 11 – Beta Test
-        color: BLUE
-      - name: Step 12 – Metrics & Iteration
-        color: BLUE
-      - name: Step 13 – Product-led Growth
-        color: BLUE
-      - name: Step 14 – Scale & B2B Planning
-        color: BLUE
-      - name: Step 15 – Continuous Learning
-        color: BLUE
-  - name: Appetite (weeks)
-    data_type: NUMBER
-    description: Shape Up appetite for the work
-  - name: Spec Link
-    data_type: TEXT
-    description: Pointer to local spec or spec-kit artifact
-  - name: Cycle
-    data_type: TEXT
-    description: Shape Up cycle or cooldown window
-  - name: Target Ship Date
-    data_type: DATE
-    description: Target completion date
-  - name: Work Type
-    data_type: SINGLE_SELECT
-    description: Differentiate feature, research, bug, or ops streams
-    options:
-      - name: Feature
-        color: GREEN
-      - name: Research
-        color: BLUE
-      - name: Design
-        color: ORANGE
-      - name: Bug
-        color: RED
-      - name: Tech Debt
-        color: PURPLE
-      - name: Ops
-        color: GRAY
-  - name: Priority
-    data_type: SINGLE_SELECT
-    description: Now / Next / Later triage
-    options:
-      - name: Now
-        color: RED
-      - name: Next
-        color: YELLOW
-      - name: Later
-        color: GRAY
 milestones:
   - title: Step 01 – Vision & Alignment
     description: Roadmap milestone for docs/roadmap/step-01-vision.md
