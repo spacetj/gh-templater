@@ -16,10 +16,12 @@ import (
 )
 
 const (
-	testOrg       = "spacetj"
-	testRepo      = "spacetj/gh-templater"
-	testTemplate  = "templates/e2e-smoke.yaml"
-	projectPrefix = "gh-templater e2e"
+	testOrg             = "spacetj"
+	testRepo            = "spacetj/gh-templater"
+	testTemplate        = "templates/e2e-smoke.yaml"
+	projectPrefix       = "gh-templater e2e"
+	smokeLabel          = "smoke-test"
+	smokeMilestoneTitle = "Smoke Cycle"
 )
 
 // TestApplyTemplateE2E exercises gh-templater against the real GitHub APIs.
@@ -40,6 +42,9 @@ func TestApplyTemplateE2E(t *testing.T) {
 		t.Fatalf("set GITHUB_TOKEN: %v", err)
 	}
 
+	cleanupSmokeArtifacts(t)
+	beforeIssues := listSmokeIssues(t)
+
 	projectName := fmt.Sprintf("%s %d", projectPrefix, time.Now().UnixNano())
 	client := github.NewCLIClient(runner.ExecRunner{})
 	opts := apply.Options{
@@ -59,6 +64,25 @@ func TestApplyTemplateE2E(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		deleteProject(t, projectID)
+	})
+
+	milestoneNumber := lookupSmokeMilestoneNumber(t)
+	if milestoneNumber == "" {
+		t.Fatalf("expected %s milestone to exist", smokeMilestoneTitle)
+	}
+	t.Cleanup(func() {
+		deleteSmokeMilestone(t, milestoneNumber)
+	})
+
+	newIssue := detectNewSmokeIssue(t, beforeIssues)
+	if newIssue.ID == "" {
+		t.Fatalf("expected a new smoke issue to be created")
+	}
+	if newIssue.Milestone == nil || newIssue.Milestone.Title != smokeMilestoneTitle {
+		t.Fatalf("smoke issue missing milestone: %+v", newIssue.Milestone)
+	}
+	t.Cleanup(func() {
+		deleteIssue(t, newIssue.ID)
 	})
 }
 
@@ -81,6 +105,100 @@ func deleteProject(t *testing.T, projectID string) {
 		"-f", fmt.Sprintf("query=%s", mutation),
 		"-F", fmt.Sprintf("projectId=%s", projectID),
 	)
+}
+
+type smokeIssue struct {
+	ID        string `json:"id"`
+	Number    int    `json:"number"`
+	Title     string `json:"title"`
+	Milestone *struct {
+		Title string `json:"title"`
+	} `json:"milestone"`
+}
+
+func listSmokeIssues(t *testing.T) map[string]smokeIssue {
+	output := runGhCommand(t, "issue", "list", "--repo", testRepo, "--label", smokeLabel, "--state", "all", "--limit", "100", "--json", "id,number,title,milestone")
+	if strings.TrimSpace(output) == "" {
+		return map[string]smokeIssue{}
+	}
+	var issues []smokeIssue
+	if err := json.Unmarshal([]byte(output), &issues); err != nil {
+		t.Fatalf("parse smoke issues: %v", err)
+	}
+	result := make(map[string]smokeIssue)
+	for _, issue := range issues {
+		result[issue.ID] = issue
+	}
+	return result
+}
+
+func detectNewSmokeIssue(t *testing.T, before map[string]smokeIssue) smokeIssue {
+	after := listSmokeIssues(t)
+	var newIssue smokeIssue
+	for id, issue := range after {
+		if _, ok := before[id]; ok {
+			continue
+		}
+		if newIssue.ID == "" || issue.Number > newIssue.Number {
+			newIssue = issue
+		}
+	}
+	return newIssue
+}
+
+func lookupSmokeMilestoneNumber(t *testing.T) string {
+	output := runGhCommand(t, "api", fmt.Sprintf("repos/%s/milestones", testRepo), "-f", "state=all", "-f", "per_page=100")
+	var milestones []struct {
+		Title  string `json:"title"`
+		Number int    `json:"number"`
+	}
+	if err := json.Unmarshal([]byte(output), &milestones); err != nil {
+		t.Fatalf("parse milestones: %v", err)
+	}
+	for _, m := range milestones {
+		if m.Title == smokeMilestoneTitle {
+			return fmt.Sprintf("%d", m.Number)
+		}
+	}
+	return ""
+}
+
+func deleteSmokeMilestone(t *testing.T, number string) {
+	if number == "" {
+		return
+	}
+	_, err := runGhCommandAllowError("api", fmt.Sprintf("repos/%s/milestones/%s", testRepo, number), "--method", "DELETE")
+	if err != nil && !strings.Contains(err.Error(), "Not Found") {
+		t.Fatalf("delete milestone %s failed: %v", number, err)
+	}
+}
+
+func deleteIssue(t *testing.T, issueID string) {
+	if issueID == "" {
+		return
+	}
+	const mutation = `mutation($issueId:ID!) {
+  deleteIssue(input:{issueId:$issueId}) {
+    clientMutationId
+  }
+}`
+	_, err := runGhCommandAllowError("api", "graphql",
+		"-f", fmt.Sprintf("query=%s", mutation),
+		"-F", fmt.Sprintf("issueId=%s", issueID),
+	)
+	if err != nil && !strings.Contains(err.Error(), "Could not resolve to an Issue") {
+		t.Fatalf("delete issue failed: %v", err)
+	}
+}
+
+func cleanupSmokeArtifacts(t *testing.T) {
+	issues := listSmokeIssues(t)
+	for _, issue := range issues {
+		deleteIssue(t, issue.ID)
+	}
+	if number := lookupSmokeMilestoneNumber(t); number != "" {
+		deleteSmokeMilestone(t, number)
+	}
 }
 
 func queryProjects(t *testing.T, ownerType, projectName string) string {
