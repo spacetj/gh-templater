@@ -20,7 +20,28 @@ jobs:
           go-version: '1.21'
       - name: Download modules
         run: go mod download
-      - name: Run tests
+      - name: Run unit tests (excluding e2e)
+        run: |
+          set -euo pipefail
+          pkgs=$(go list ./... | grep -v "internal/e2e")
+          if [ -n "$pkgs" ]; then
+            go test $pkgs
+          fi
+
+  e2e-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    if: ${{ secrets.GH_TEMPLATER_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Download modules
+        run: go mod download
+      - name: Run E2E tests
         env:
           GH_TEMPLATER_TOKEN: ${{ secrets.GH_TEMPLATER_TOKEN }}
-        run: go test ./...
+        run: go test ./internal/e2e -run TestApplyTemplateE2E -count=1
