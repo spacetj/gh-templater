@@ -9,10 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/github/gh-templater/internal/apply"
-	"github.com/github/gh-templater/internal/github"
-	"github.com/github/gh-templater/internal/runner"
 )
 
 const (
@@ -42,21 +38,20 @@ func TestApplyTemplateE2E(t *testing.T) {
 		t.Fatalf("set GITHUB_TOKEN: %v", err)
 	}
 
+	repoRootPath := repoRoot(t)
 	cleanupSmokeArtifacts(t)
 	beforeIssues := listSmokeIssues(t)
+	installGhTemplaterExtension(t, repoRootPath)
 
 	projectName := fmt.Sprintf("%s %d", projectPrefix, time.Now().UnixNano())
-	client := github.NewCLIClient(runner.ExecRunner{})
-	opts := apply.Options{
-		Org:         testOrg,
-		ProjectName: projectName,
-		IssuesRepo:  testRepo,
-		Template:    filepath.Join(repoRoot(t), testTemplate),
-	}
-
-	if err := apply.Apply(opts, client); err != nil {
-		t.Fatalf("apply failed: %v", err)
-	}
+	templatePath := filepath.Join(repoRootPath, testTemplate)
+	runGhCommand(t,
+		"templater", "apply",
+		"--org", testOrg,
+		"--project", projectName,
+		"--issues-repo", testRepo,
+		"--template", templatePath,
+	)
 
 	projectID := lookupProjectID(t, projectName)
 	if projectID == "" {
@@ -198,6 +193,20 @@ func cleanupSmokeArtifacts(t *testing.T) {
 	}
 	if number := lookupSmokeMilestoneNumber(t); number != "" {
 		deleteSmokeMilestone(t, number)
+	}
+}
+
+func installGhTemplaterExtension(t *testing.T, repoPath string) {
+	removeGhTemplaterExtension(t)
+	runGhCommand(t, "extension", "install", repoPath)
+	t.Cleanup(func() {
+		removeGhTemplaterExtension(t)
+	})
+}
+
+func removeGhTemplaterExtension(t *testing.T) {
+	if _, err := runGhCommandAllowError("extension", "remove", "gh-templater"); err != nil && !strings.Contains(err.Error(), "not installed") {
+		t.Fatalf("remove extension failed: %v", err)
 	}
 }
 
