@@ -703,8 +703,10 @@ func (c *CLIClient) runGraphQL(query string, variables map[string]interface{}) (
 	}
 	defer os.Remove(file.Name())
 	if _, err := file.Write(data); err != nil {
-		file.Close()
-		return "", err
+		if cerr := file.Close(); cerr != nil {
+			return "", fmt.Errorf("write graphql payload: %v (close error: %w)", err, cerr)
+		}
+		return "", fmt.Errorf("write graphql payload: %w", err)
 	}
 	if err := file.Close(); err != nil {
 		return "", err
