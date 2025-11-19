@@ -632,6 +632,8 @@ func (c *CLIClient) fetchProjectFields(projectID string) (map[string]ProjectFiel
             id
             name
             dataType
+          }
+          ... on ProjectV2SingleSelectField {
             options { id name }
           }
         }
