@@ -557,9 +557,6 @@ func (c *CLIClient) createProjectField(projectID string, field FieldTemplate) er
 		"name":      field.Name,
 		"dataType":  field.DataType,
 	}
-	if strings.TrimSpace(field.Description) != "" {
-		input["description"] = field.Description
-	}
 	if strings.EqualFold(field.DataType, "SINGLE_SELECT") && len(field.Options) > 0 {
 		var options []map[string]string
 		for _, opt := range field.Options {
@@ -608,9 +605,6 @@ func (c *CLIClient) createProjectFieldOption(fieldID string, option FieldOption)
 	}
 	if strings.TrimSpace(option.Color) != "" {
 		input["color"] = option.Color
-	}
-	if strings.TrimSpace(option.Description) != "" {
-		input["description"] = option.Description
 	}
 	mutation := `mutation($input:CreateProjectV2FieldOptionInput!) {
   createProjectV2FieldOption(input:$input) { projectV2FieldOption { id } }
