@@ -1,10 +1,21 @@
+<p align="center">
+  <img src="assets/logo.png" alt="gh-templater logo" width="260">
+</p>
+
 # gh-templater ✨🛠️
 
 > A GitHub CLI extension that turns YAML project templates into fully-provisioned GitHub Projects with milestones and issues.
 
 ## 🌟 Why
 Modern teams repeat the same bootstrap steps for every new initiative. `gh-templater` lets you codify those steps as YAML so
-anyone can spin up a ready-to-track project with a single command—no copy/paste required.
+anyone can spin up a ready-to-track project with a single command—no copy/paste required. Instead of reinventing ticket templates, 
+issue text, and project scaffolding every quarter, you capture the ritual once and replay it endlessly.
+
+### 🧠 Why templating matters
+- **Reduce copy/paste drift:** Centralized templates keep labels, milestones, and definitions of done perfectly synced.
+- **Reproducible tasks:** Versioned YAML means retros feed straight into the next kickoff—update the template once and every future run benefits.
+- **Faster onboarding:** New teammates run the CLI and focus on content, not Markdown gymnastics.
+- **Cleaner launches:** Consistent project fields and checklists unlock reliable reporting in Projects v2.
 
 ```mermaid
 graph LR
@@ -131,6 +142,10 @@ graph LR
   Clean --> P[Delete Project]
   P --> Org[Org stays clutter-free ✨]
 ```
+
+## 📰 Further reading
+
+- `docs/blog-gh-templater.md` — a deep dive into the pain of un-templated projects, why reproducible sprints matter, and how to introduce `gh-templater` to your team.
 
 ## 🛠️ Development
 
