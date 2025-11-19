@@ -108,6 +108,21 @@ func assertProjectFieldValue(t *testing.T, projectID, issueID, fieldName, expect
     }
   }
 }`
+	const maxAttempts = 5
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		found, err := projectItemHasField(t, query, projectID, issueID, fieldName, expected)
+		if err != nil {
+			t.Fatalf("query project items: %v", err)
+		}
+		if found {
+			return
+		}
+		time.Sleep(2 * time.Second)
+	}
+	t.Fatalf("issue %s not found in project items", issueID)
+}
+
+func projectItemHasField(t *testing.T, query, projectID, issueID, fieldName, expected string) (bool, error) {
 	output := runGhCommand(t, "api", "graphql",
 		"-f", fmt.Sprintf("query=%s", query),
 		"-F", fmt.Sprintf("projectId=%s", projectID),
@@ -132,7 +147,7 @@ func assertProjectFieldValue(t *testing.T, projectID, issueID, fieldName, expect
 		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(output), &resp); err != nil {
-		t.Fatalf("parse project items: %v", err)
+		return false, err
 	}
 	for _, node := range resp.Data.Node.Items.Nodes {
 		if node.Content.Typename != "Issue" {
@@ -142,14 +157,14 @@ func assertProjectFieldValue(t *testing.T, projectID, issueID, fieldName, expect
 			continue
 		}
 		if node.FieldValue.Typename != "ProjectV2ItemFieldTextValue" {
-			t.Fatalf("unexpected field type %s", node.FieldValue.Typename)
+			return false, fmt.Errorf("unexpected field type %s", node.FieldValue.Typename)
 		}
 		if node.FieldValue.Text != expected {
-			t.Fatalf("expected field %s to equal %q, got %q", fieldName, expected, node.FieldValue.Text)
+			return false, fmt.Errorf("expected field %s to equal %q, got %q", fieldName, expected, node.FieldValue.Text)
 		}
-		return
+		return true, nil
 	}
-	t.Fatalf("issue %s not found in project items", issueID)
+	return false, nil
 }
 
 func lookupProjectID(t *testing.T, projectName string) string {
