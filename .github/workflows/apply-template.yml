@@ -1,0 +1,53 @@
+name: Apply Project Template
+
+on:
+  workflow_dispatch:
+    inputs:
+      org:
+        description: "Organization that will own the project"
+        required: true
+        type: string
+      repo:
+        description: "owner/repo that will receive milestones and issues"
+        required: true
+        type: string
+      project-name:
+        description: "Name for the new GitHub project"
+        required: true
+        type: string
+      template-name:
+        description: "Template file under templates/ (e.g. backend-grpc.yaml)"
+        required: true
+        type: string
+
+jobs:
+  apply-template:
+    name: Apply Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+
+      - name: Apply template
+        env:
+          GH_TOKEN: ${{ secrets.GH_TEMPLATER_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TEMPLATER_TOKEN }}
+        run: |
+          set -euo pipefail
+          TEMPLATE_PATH="templates/${{ inputs.template-name }}"
+          if [ ! -f "$TEMPLATE_PATH" ]; then
+            echo "Template $TEMPLATE_PATH not found" >&2
+            exit 1
+          fi
+
+          go run ./cmd/gh-templater apply \
+            --org "${{ inputs.org }}" \
+            --project "${{ inputs['project-name'] }}" \
+            --issues-repo "${{ inputs.repo }}" \
+            --template "$TEMPLATE_PATH"

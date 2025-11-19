@@ -1,0 +1,718 @@
+name: Shape Up Launchpad
+project:
+  readme: |
+    # Startup Shape Up Launchpad
+
+    This template mirrors the automation provided by the legacy `bootstrap-project.sh`
+    script. Applying it will:
+
+    - Create a GitHub Project v2 with Shape Up aware custom fields
+    - Sync the full Shape Up label palette (spec, appetite, and work streams)
+    - Provision 15 roadmap milestones that track each Shape Up / Startup step
+    - Open a spec issue for every step, including doc context metadata, field values,
+      milestone alignment, and default labels
+
+    Each issue is intended to be refined in spec-kit style and will automatically be
+    added to the project with the right custom-field state once project field support
+    is enabled in `gh-templater`.
+  fields:
+    - name: Shape Up Flow
+      data_type: SINGLE_SELECT
+      description: Mirrors Shape Up status from pitch to cooldown
+      options:
+        - name: Pitch
+          color: YELLOW
+          description: Idea waiting for appetite
+        - name: Shaping
+          color: BLUE
+          description: Problem and appetite being shaped
+        - name: Bet
+          color: ORANGE
+          description: Selected for current cycle
+        - name: Build
+          color: GREEN
+          description: Actively being built
+        - name: QA
+          color: PINK
+          description: Testing and polish
+        - name: Cooldown
+          color: PURPLE
+          description: Post-cycle clean-up
+        - name: Done
+          color: GRAY
+          description: Delivered
+    - name: Spec State
+      data_type: SINGLE_SELECT
+      description: Spec-kit lifecycle
+      options:
+        - name: Draft
+          color: YELLOW
+        - name: Review
+          color: ORANGE
+        - name: Ready
+          color: GREEN
+        - name: In Build
+          color: BLUE
+        - name: Complete
+          color: PURPLE
+        - name: Archived
+          color: GRAY
+    - name: Appetite (weeks)
+      data_type: NUMBER
+      description: Shape Up appetite for the work
+    - name: Spec Link
+      data_type: TEXT
+      description: Pointer to local spec or spec-kit artifact
+    - name: Cycle
+      data_type: TEXT
+      description: Shape Up cycle or cooldown window
+    - name: Target Ship Date
+      data_type: DATE
+      description: Target completion date
+    - name: Work Type
+      data_type: SINGLE_SELECT
+      description: Differentiate feature, research, bug, or ops streams
+      options:
+        - name: Feature
+          color: GREEN
+        - name: Research
+          color: BLUE
+        - name: Design
+          color: ORANGE
+        - name: Bug
+          color: RED
+        - name: Tech Debt
+          color: PURPLE
+        - name: Ops
+          color: GRAY
+    - name: Priority
+      data_type: SINGLE_SELECT
+      description: Now / Next / Later triage
+      options:
+        - name: Now
+          color: RED
+        - name: Next
+          color: YELLOW
+        - name: Later
+          color: GRAY
+labels:
+  - name: shapeup:pitch
+    color: BFD4F2
+    description: Pitch candidates waiting for appetite
+  - name: shapeup:shaping
+    color: B1E3AD
+    description: Work being shaped
+  - name: shapeup:bet
+    color: F6E58D
+    description: Bets selected for current cycle
+  - name: shapeup:build
+    color: FAD7A0
+    description: Active build work
+  - name: shapeup:qa
+    color: F5C6CB
+    description: Testing and QA
+  - name: shapeup:cooldown
+    color: D5DBDB
+    description: Cooldown and clean-up work
+  - name: shapeup:done
+    color: C5E1A5
+    description: Fully delivered
+  - name: spec
+    color: 9B59B6
+    description: Spec-driven work item
+  - name: spec:draft
+    color: E6B0AA
+    description: Spec in drafting
+  - name: spec:review
+    color: F4D03F
+    description: Spec under review
+  - name: spec:ready
+    color: 82E0AA
+    description: Spec approved for build
+  - name: spec:build
+    color: 5DADE2
+    description: Spec currently being implemented
+  - name: spec:done
+    color: 58D68D
+    description: Spec implemented and documented
+  - name: bug
+    color: E74C3C
+    description: Bug fix
+  - name: feedback
+    color: BB8FCE
+    description: Customer or stakeholder feedback
+  - name: tech-debt
+    color: 4D5656
+    description: Technical debt follow-up
+  - name: research
+    color: 1F618D
+    description: Discovery or research tasks
+  - name: design
+    color: F5B041
+    description: Design and UX iterations
+  - name: ops
+    color: 7F8C8D
+    description: Operational enablement
+  - name: triage
+    color: 273746
+    description: Needs triage before prioritization
+  - name: work:feature
+    color: 1ABC9C
+    description: Feature delivery stream
+  - name: work:research
+    color: 3498DB
+    description: User research stream
+  - name: work:design
+    color: F39C12
+    description: Design / UX stream
+  - name: work:bug
+    color: C0392B
+    description: Bug fix stream
+  - name: work:tech-debt
+    color: 515A5A
+    description: Tech debt payoff stream
+  - name: work:ops
+    color: 7DCEA0
+    description: Operational task stream
+  - name: priority:now
+    color: E67E22
+    description: Current cycle appetite
+  - name: priority:next
+    color: F1C40F
+    description: On deck
+  - name: priority:later
+    color: 95A5A6
+    description: Backlog holding pen
+  - name: docs:todo
+    color: F0B27A
+    description: Docs-sourced to-do item
+  - name: spec:launchpad
+    color: 566573
+    description: Launchpad spec automation helper
+milestones:
+  - title: Step 01 – Vision & Alignment
+    description: Roadmap milestone for docs/roadmap/step-01-vision.md
+  - title: Step 02 – Market Research & Validation
+    description: Roadmap milestone for docs/roadmap/step-02-market-research.md
+  - title: Step 03 – Deep User Research
+    description: Roadmap milestone for docs/roadmap/step-03-user-research.md
+  - title: Step 04 – Value Proposition & Business Model
+    description: Roadmap milestone for docs/roadmap/step-04-value-proposition.md
+  - title: Step 05 – Solution Ideation
+    description: Roadmap milestone for docs/roadmap/step-05-brainstorming.md
+  - title: Step 06 – Journey Mapping
+    description: Roadmap milestone for docs/roadmap/step-06-user-journey.md
+  - title: Step 07 – MVP Prioritization
+    description: Roadmap milestone for docs/roadmap/step-07-mvp-prioritization.md
+  - title: Step 08 – Experience Design & Prototype
+    description: Roadmap milestone for docs/roadmap/step-08-design.md
+  - title: Step 09 – Pre-launch Validation
+    description: Roadmap milestone for docs/roadmap/step-09-prelaunch-validation.md
+  - title: Step 10 – MVP Build
+    description: Roadmap milestone for docs/roadmap/step-10-mvp-development.md
+  - title: Step 11 – Beta Test
+    description: Roadmap milestone for docs/roadmap/step-11-beta-testing.md
+  - title: Step 12 – Metrics & Iteration
+    description: Roadmap milestone for docs/roadmap/step-12-iteration.md
+  - title: Step 13 – Product-led Growth
+    description: Roadmap milestone for docs/roadmap/step-13-plg.md
+  - title: Step 14 – Scale & B2B Planning
+    description: Roadmap milestone for docs/roadmap/step-14-scalability.md
+  - title: Step 15 – Continuous Learning
+    description: Roadmap milestone for docs/roadmap/step-15-continuous-learning.md
+issues:
+  - title: Spec Step 01 – Vision & Alignment
+    body: |
+      ## 🎯 Objective
+      Execute Step 01 – Vision & Alignment from docs/roadmap/step-01-vision.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 01 – Vision & Alignment
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-01-vision.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-01-vision.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-01-vision.md
+      purpose: Align leadership on the north-star vision, outcomes, and guardrails.
+      key_activities:
+        - Facilitate a kickoff workshop with founders
+        - Document the north star metric and anti-goals
+        - Capture open questions for research
+  - title: Spec Step 02 – Market Research & Validation
+    body: |
+      ## 🎯 Objective
+      Execute Step 02 – Market Research & Validation from docs/roadmap/step-02-market-research.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:research, priority:now, spec:launchpad]
+    milestone: Step 02 – Market Research & Validation
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-02-market-research.md
+      Work Type: Research
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-02-market-research.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-02-market-research.md
+      purpose: Validate the market size, competitor landscape, and unmet needs.
+      key_activities:
+        - Analyze competitor offerings and positioning
+        - Quantify market opportunity
+        - Summarize key insights for leadership
+  - title: Spec Step 03 – Deep User Research
+    body: |
+      ## 🎯 Objective
+      Execute Step 03 – Deep User Research from docs/roadmap/step-03-user-research.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:research, priority:now, spec:launchpad]
+    milestone: Step 03 – Deep User Research
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-03-user-research.md
+      Work Type: Research
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-03-user-research.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-03-user-research.md
+      purpose: Validate personas, pain points, and key workflows directly with users.
+      key_activities:
+        - Interview early adopters and champions
+        - Map qualitative quotes to JTBD themes
+        - Identify top friction points and opportunities
+  - title: Spec Step 04 – Value Proposition & Business Model
+    body: |
+      ## 🎯 Objective
+      Execute Step 04 – Value Proposition & Business Model from docs/roadmap/step-04-value-proposition.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 04 – Value Proposition & Business Model
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-04-value-proposition.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-04-value-proposition.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-04-value-proposition.md
+      purpose: Define the promise, differentiation, and monetization levers.
+      key_activities:
+        - Draft the value prop canvas and messaging pillars
+        - Explore pricing and packaging hypotheses
+        - Document success metrics for the bet
+  - title: Spec Step 05 – Solution Ideation
+    body: |
+      ## 🎯 Objective
+      Execute Step 05 – Solution Ideation from docs/roadmap/step-05-brainstorming.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:design, priority:now, spec:launchpad]
+    milestone: Step 05 – Solution Ideation
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-05-brainstorming.md
+      Work Type: Design
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-05-brainstorming.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-05-brainstorming.md
+      purpose: Explore solution approaches and converge on the sharpest bet.
+      key_activities:
+        - Facilitate divergent/convergent brainstorming
+        - Review sketches with stakeholders
+        - Capture rabbit holes and no-gos
+  - title: Spec Step 06 – Journey Mapping
+    body: |
+      ## 🎯 Objective
+      Execute Step 06 – Journey Mapping from docs/roadmap/step-06-user-journey.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:design, priority:now, spec:launchpad]
+    milestone: Step 06 – Journey Mapping
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-06-user-journey.md
+      Work Type: Design
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-06-user-journey.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-06-user-journey.md
+      purpose: Visualize the end-to-end journey and highlight moments that matter.
+      key_activities:
+        - Build service blueprints for key personas
+        - Identify joy/friction moments
+        - Feed insights into shaping backlog
+  - title: Spec Step 07 – MVP Prioritization
+    body: |
+      ## 🎯 Objective
+      Execute Step 07 – MVP Prioritization from docs/roadmap/step-07-mvp-prioritization.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 07 – MVP Prioritization
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-07-mvp-prioritization.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-07-mvp-prioritization.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-07-mvp-prioritization.md
+      purpose: Translate journeys into a focused MVP scope and appetite.
+      key_activities:
+        - Rank opportunities against appetite
+        - Capture tradeoffs and plan of record
+        - Align stakeholders on the bet
+  - title: Spec Step 08 – Experience Design & Prototype
+    body: |
+      ## 🎯 Objective
+      Execute Step 08 – Experience Design & Prototype from docs/roadmap/step-08-design.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:design, priority:now, spec:launchpad]
+    milestone: Step 08 – Experience Design & Prototype
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-08-design.md
+      Work Type: Design
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-08-design.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-08-design.md
+      purpose: Produce clickable prototypes and validate the solution narrative.
+      key_activities:
+        - Build high-fidelity prototype
+        - Run design reviews
+        - Capture Q&A + iteration backlog
+  - title: Spec Step 09 – Pre-launch Validation
+    body: |
+      ## 🎯 Objective
+      Execute Step 09 – Pre-launch Validation from docs/roadmap/step-09-prelaunch-validation.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:research, priority:now, spec:launchpad]
+    milestone: Step 09 – Pre-launch Validation
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-09-prelaunch-validation.md
+      Work Type: Research
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-09-prelaunch-validation.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-09-prelaunch-validation.md
+      purpose: Validate prototypes and messaging with target users before build.
+      key_activities:
+        - Conduct validation sessions
+        - Capture confidence levels and risks
+        - Update appetite / roadmap if needed
+  - title: Spec Step 10 – MVP Build
+    body: |
+      ## 🎯 Objective
+      Execute Step 10 – MVP Build from docs/roadmap/step-10-mvp-development.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 10 – MVP Build
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "2"
+      Spec Link: docs/roadmap/step-10-mvp-development.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-10-mvp-development.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-10-mvp-development.md
+      purpose: Translate specs into a build-ready plan with clear ship criteria.
+      key_activities:
+        - Break work into scopes and spikes
+        - Define instrumentation & launch checklist
+        - Align eng/design/PM on rollout
+  - title: Spec Step 11 – Beta Test
+    body: |
+      ## 🎯 Objective
+      Execute Step 11 – Beta Test from docs/roadmap/step-11-beta-testing.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:ops, priority:now, spec:launchpad]
+    milestone: Step 11 – Beta Test
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-11-beta-testing.md
+      Work Type: Ops
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-11-beta-testing.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-11-beta-testing.md
+      purpose: Plan and execute closed beta testing with aligned success metrics.
+      key_activities:
+        - Recruit beta cohort and onboarding flows
+        - Capture success metrics and instrumentation
+        - Define exit criteria for GA
+  - title: Spec Step 12 – Metrics & Iteration
+    body: |
+      ## 🎯 Objective
+      Execute Step 12 – Metrics & Iteration from docs/roadmap/step-12-iteration.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 12 – Metrics & Iteration
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-12-iteration.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-12-iteration.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-12-iteration.md
+      purpose: Stand up telemetry and iteration cadences post-beta.
+      key_activities:
+        - Define metrics dashboards
+        - Queue follow-up iterations
+        - Plan comms around learnings
+  - title: Spec Step 13 – Product-led Growth
+    body: |
+      ## 🎯 Objective
+      Execute Step 13 – Product-led Growth from docs/roadmap/step-13-plg.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 13 – Product-led Growth
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-13-plg.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-13-plg.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-13-plg.md
+      purpose: Define activation, retention, and expansion motions.
+      key_activities:
+        - Map PLG funnel opportunities
+        - Align growth experiments with metrics
+        - Capture dependencies on marketing/sales
+  - title: Spec Step 14 – Scale & B2B Planning
+    body: |
+      ## 🎯 Objective
+      Execute Step 14 – Scale & B2B Planning from docs/roadmap/step-14-scalability.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:feature, priority:now, spec:launchpad]
+    milestone: Step 14 – Scale & B2B Planning
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-14-scalability.md
+      Work Type: Feature
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-14-scalability.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-14-scalability.md
+      purpose: Harden the platform for scale and prep B2B workflows.
+      key_activities:
+        - Capture scale requirements and SLAs
+        - Align GTM teams on enterprise-readiness plan
+        - Identify technical bets for robustness
+  - title: Spec Step 15 – Continuous Learning
+    body: |
+      ## 🎯 Objective
+      Execute Step 15 – Continuous Learning from docs/roadmap/step-15-continuous-learning.md.
+
+      ## 📐 Spec Kit Outline
+      > Capture the problem framing, appetite, solution outline, and risks before build.
+
+      - [ ] Problem & user value
+      - [ ] Appetite (shape up time budget)
+      - [ ] Solution outline & risks
+      - [ ] Rabbit holes + no-gos
+      - [ ] Success metrics / guardrails
+
+      ## 🤖 Build Partner
+      Use Codex or your preferred AI pair to convert the spec into actionable tasks.
+    labels: [spec, spec:draft, shapeup:pitch, work:ops, priority:now, spec:launchpad]
+    milestone: Step 15 – Continuous Learning
+    fields:
+      Shape Up Flow: Pitch
+      Spec State: Draft
+      Appetite (weeks): "1"
+      Spec Link: docs/roadmap/step-15-continuous-learning.md
+      Work Type: Ops
+      Priority: Now
+    doc:
+      source: docs/roadmap/step-15-continuous-learning.md
+      link: https://github.com/your-org/startup/blob/main/docs/roadmap/step-15-continuous-learning.md
+      purpose: Build feedback loops and rituals to sustain learning post-launch.
+      key_activities:
+        - Stand up retro cadence and learnings backlog
+        - Capture insights library for future bets
+        - Define triggers for new spec cycles

@@ -1,0 +1,514 @@
+name: Production-Ready Go Microservice
+project:
+  readme: |
+    # Production-Ready Go Microservice
+
+    This template mirrors the 17-step checklist in `docs/microservice/`. Applying it will:
+
+    - Create milestones for every checklist step so you can track readiness end-to-end.
+    - Sync a microservice-specific label palette covering design, automation, security, and compliance.
+    - Provision custom fields that capture readiness stage, engineering discipline, docs links, risk, and target ship dates.
+    - Open an issue for each step with links back to the detailed markdown briefs.
+
+    ## 🔭 Recommended Views
+
+    1. **Readiness Roadmap** (Roadmap view)
+       - Group by **Milestone** to see progress across Steps 01–17.
+       - Plot by **Target Ship Date** to visualize when each capability lands.
+    2. **Hardening Board** (Board view)
+       - Columns: Backlog, Design, Implementation, Automation, Operations Ready, On-Call Ready, Done.
+       - Group rows by **Readiness Stage** to spot bottlenecks.
+    3. **Compliance Table** (Table view)
+       - Show **Discipline**, **Risk Level**, and **Docs Link** fields for faster reviews.
+
+    Link each generated card to its owning engineer, keep docs updated, and feed incident learnings back into the checklist to stay production-ready.
+  fields:
+    - name: Readiness Stage
+      data_type: SINGLE_SELECT
+      description: Macro phase of the readiness journey
+      options:
+        - name: Design & Architecture
+          color: BLUE
+        - name: Implementation
+          color: GREEN
+        - name: Automation & Quality
+          color: ORANGE
+        - name: Operational Hardening
+          color: PURPLE
+        - name: On-Call & Compliance
+          color: GRAY
+    - name: Discipline
+      data_type: SINGLE_SELECT
+      description: Primary engineering area responsible
+      options:
+        - name: Architecture
+          color: BLUE
+        - name: API
+          color: TEAL
+        - name: Dependencies
+          color: GREEN
+        - name: Configuration
+          color: BROWN
+        - name: Security
+          color: RED
+        - name: Testing
+          color: ORANGE
+        - name: Quality
+          color: PINK
+        - name: CI/CD
+          color: BLUE
+        - name: Secrets
+          color: PURPLE
+        - name: Observability
+          color: YELLOW
+        - name: Health & Probes
+          color: GREEN
+        - name: Resiliency
+          color: GREEN
+        - name: Fault Tolerance
+          color: GRAY
+        - name: Deployment
+          color: BLUE
+        - name: Documentation
+          color: PURPLE
+        - name: Incident Response
+          color: ORANGE
+        - name: Compliance
+          color: BROWN
+    - name: Risk Level
+      data_type: SINGLE_SELECT
+      description: Risk rating for leadership reviews
+      options:
+        - name: High
+          color: RED
+        - name: Medium
+          color: ORANGE
+        - name: Low
+          color: GREEN
+    - name: Target Ship Date
+      data_type: DATE
+      description: Target completion date for the task
+    - name: Docs Link
+      data_type: TEXT
+      description: Reference to supporting documents
+
+labels:
+  - name: microservice:design
+    color: 1565C0
+    description: Architecture & boundaries work
+  - name: microservice:api
+    color: 5E35B1
+    description: API design and versioning tasks
+  - name: microservice:deps
+    color: 00897B
+    description: Dependency and module management
+  - name: microservice:config
+    color: 6D4C41
+    description: Configuration + environment hardening
+  - name: microservice:security
+    color: C62828
+    description: Secure coding and auth concerns
+  - name: microservice:testing
+    color: 2E7D32
+    description: Unit/integration/E2E testing
+  - name: microservice:quality
+    color: 283593
+    description: Static analysis and linting
+  - name: microservice:ci-cd
+    color: 0277BD
+    description: Build & deployment automation
+  - name: microservice:secrets
+    color: 8E24AA
+    description: Secrets and sensitive data handling
+  - name: microservice:observability
+    color: F9A825
+    description: Logging, metrics, tracing work
+  - name: microservice:health
+    color: 558B2F
+    description: Health checks and readiness probes
+  - name: microservice:resiliency
+    color: 00796B
+    description: Timeouts, retries, rate limits
+  - name: microservice:fault-tolerance
+    color: 37474F
+    description: Fault tolerance & graceful degradation
+  - name: microservice:deployment
+    color: 546E7A
+    description: Containerization & rollout work
+  - name: microservice:docs
+    color: 3949AB
+    description: Documentation & runbooks
+  - name: microservice:incident
+    color: EF6C00
+    description: Incident response practice
+  - name: microservice:compliance
+    color: 795548
+    description: Compliance & production readiness reviews
+  - name: priority:now
+    color: E53935
+    description: Current readiness focus
+  - name: priority:next
+    color: FDD835
+    description: Upcoming focus area
+  - name: priority:later
+    color: 90A4AE
+    description: Backlog item
+milestones:
+  - title: Step 01 – Project Scaffolding & Architecture Design
+    description: docs/microservice/step-01-project-scaffolding.md
+  - title: Step 02 – API Design & Versioning
+    description: docs/microservice/step-02-api-design.md
+  - title: Step 03 – Dependency Management
+    description: docs/microservice/step-03-dependency-management.md
+  - title: Step 04 – Configuration & Environment Management
+    description: docs/microservice/step-04-configuration.md
+  - title: Step 05 – Secure Coding Practices
+    description: docs/microservice/step-05-secure-coding.md
+  - title: Step 06 – Unit, Integration, and End-to-End Testing
+    description: docs/microservice/step-06-testing.md
+  - title: Step 07 – Static Analysis & Code Quality Enforcement
+    description: docs/microservice/step-07-static-analysis.md
+  - title: Step 08 – CI/CD Foundations
+    description: docs/microservice/step-08-ci-cd.md
+  - title: Step 09 – Secrets & Sensitive Data Handling
+    description: docs/microservice/step-09-secrets.md
+  - title: Step 10 – Observability (Logging, Metrics, Tracing)
+    description: docs/microservice/step-10-observability.md
+  - title: Step 11 – Health Checks & Readiness Probes
+    description: docs/microservice/step-11-health-checks.md
+  - title: Step 12 – Rate Limiting, Retries, and Backoff
+    description: docs/microservice/step-12-resiliency.md
+  - title: Step 13 – Fault Tolerance & Graceful Degradation
+    description: docs/microservice/step-13-fault-tolerance.md
+  - title: Step 14 – Deployment Strategies & Containerization
+    description: docs/microservice/step-14-deployment.md
+  - title: Step 15 – Documentation & Runbooks
+    description: docs/microservice/step-15-documentation.md
+  - title: Step 16 – Incident Response & On-Call Readiness
+    description: docs/microservice/step-16-incident-response.md
+  - title: Step 17 – Compliance & Production-Readiness Standards
+    description: docs/microservice/step-17-compliance.md
+issues:
+  - title: Step 01 – Project Scaffolding & Architecture
+    body: |
+      ## 🎯 Objective
+      Establish the microservice charter, bounded context, and Go project scaffolding outlined in docs/microservice/step-01-project-scaffolding.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Document service scope, dependencies, and discovery/routing plan.
+      - [ ] Generate the standard Go layout (`cmd/`, `internal/`, `pkg/`, `configs/`, `build/`).
+      - [ ] Define redundancy expectations (instance counts, AZ placement) and remove single points of failure.
+
+      ## 📚 Reference
+      - docs/microservice/step-01-project-scaffolding.md
+    labels: [microservice:design, priority:now]
+    milestone: Step 01 – Project Scaffolding & Architecture Design
+    fields:
+      Readiness Stage: Design & Architecture
+      Discipline: Architecture
+      Risk Level: High
+      Docs Link: docs/microservice/step-01-project-scaffolding.md
+  - title: Step 02 – API Design & Versioning
+    body: |
+      ## 🎯 Objective
+      Produce a well-defined API contract with explicit versioning per docs/microservice/step-02-api-design.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Publish OpenAPI/proto schemas with examples and error envelopes.
+      - [ ] Define versioning policy, deprecation plan, and contract tests.
+      - [ ] Host human-readable docs so clients can discover endpoints quickly.
+
+      ## 📚 Reference
+      - docs/microservice/step-02-api-design.md
+    labels: [microservice:api, priority:now]
+    milestone: Step 02 – API Design & Versioning
+    fields:
+      Readiness Stage: Design & Architecture
+      Discipline: API
+      Risk Level: High
+      Docs Link: docs/microservice/step-02-api-design.md
+  - title: Step 03 – Dependency Management
+    body: |
+      ## 🎯 Objective
+      Lock down Go modules, dependency policies, and automation from docs/microservice/step-03-dependency-management.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Initialize go.mod/go.sum with pinned versions and tidy enforcement.
+      - [ ] Configure private proxy/cache plus Dependabot/Renovate for updates.
+      - [ ] Document approved libraries and license posture.
+
+      ## 📚 Reference
+      - docs/microservice/step-03-dependency-management.md
+    labels: [microservice:deps, priority:now]
+    milestone: Step 03 – Dependency Management
+    fields:
+      Readiness Stage: Implementation
+      Discipline: Dependencies
+      Risk Level: Medium
+      Docs Link: docs/microservice/step-03-dependency-management.md
+  - title: Step 04 – Configuration & Environment Management
+    body: |
+      ## 🎯 Objective
+      Externalize configuration and establish environment management patterns per docs/microservice/step-04-configuration.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Implement layered config loading with clear precedence and sample files.
+      - [ ] Separate secrets from config and document rollout strategy.
+      - [ ] Fail fast on invalid/missing config with helpful logs.
+
+      ## 📚 Reference
+      - docs/microservice/step-04-configuration.md
+    labels: [microservice:config, priority:now]
+    milestone: Step 04 – Configuration & Environment Management
+    fields:
+      Readiness Stage: Implementation
+      Discipline: Configuration
+      Risk Level: Medium
+      Docs Link: docs/microservice/step-04-configuration.md
+  - title: Step 05 – Secure Coding Practices
+    body: |
+      ## 🎯 Objective
+      Embed secure coding standards, auth, and transport security following docs/microservice/step-05-secure-coding.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Enforce auth/authz middleware and thorough input validation.
+      - [ ] Require TLS/mTLS for inbound/outbound traffic; run containers as non-root.
+      - [ ] Integrate gosec/secret scanning into CI with failure thresholds.
+
+      ## 📚 Reference
+      - docs/microservice/step-05-secure-coding.md
+    labels: [microservice:security, priority:now]
+    milestone: Step 05 – Secure Coding Practices
+    fields:
+      Readiness Stage: Implementation
+      Discipline: Security
+      Risk Level: High
+      Docs Link: docs/microservice/step-05-secure-coding.md
+  - title: Step 06 – Unit, Integration, and End-to-End Testing
+    body: |
+      ## 🎯 Objective
+      Deliver comprehensive unit/integration/E2E coverage per docs/microservice/step-06-testing.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Achieve strong unit test coverage for business logic.
+      - [ ] Run integration tests via containers or cloud test env; include race detector runs.
+      - [ ] Provide E2E + load tests with documented capacity findings.
+
+      ## 📚 Reference
+      - docs/microservice/step-06-testing.md
+    labels: [microservice:testing, priority:now]
+    milestone: Step 06 – Unit, Integration, and End-to-End Testing
+    fields:
+      Readiness Stage: Implementation
+      Discipline: Testing
+      Risk Level: High
+      Docs Link: docs/microservice/step-06-testing.md
+  - title: Step 07 – Static Analysis & Code Quality Enforcement
+    body: |
+      ## 🎯 Objective
+      Enforce formatting, linting, and review standards from docs/microservice/step-07-static-analysis.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Configure gofmt + golangci-lint in CI; block merges on failures.
+      - [ ] Integrate coverage + quality gates (Sonar/CodeClimate) if required.
+      - [ ] Document review checklist and automation for recurring issues.
+
+      ## 📚 Reference
+      - docs/microservice/step-07-static-analysis.md
+    labels: [microservice:quality, priority:now]
+    milestone: Step 07 – Static Analysis & Code Quality Enforcement
+    fields:
+      Readiness Stage: Automation & Quality
+      Discipline: Quality
+      Risk Level: Medium
+      Docs Link: docs/microservice/step-07-static-analysis.md
+  - title: Step 08 – CI/CD Foundations
+    body: |
+      ## 🎯 Objective
+      Stand up automated build/test/deploy pipelines described in docs/microservice/step-08-ci-cd.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Run tests, linters, security scans, and image builds on every push.
+      - [ ] Version and publish artifacts + Docker images with immutable tags.
+      - [ ] Automate staging + prod deployments (blue/green, canary, or rolling) with post-deploy checks.
+
+      ## 📚 Reference
+      - docs/microservice/step-08-ci-cd.md
+    labels: [microservice:ci-cd, priority:now]
+    milestone: Step 08 – CI/CD Foundations
+    fields:
+      Readiness Stage: Automation & Quality
+      Discipline: CI/CD
+      Risk Level: High
+      Docs Link: docs/microservice/step-08-ci-cd.md
+  - title: Step 09 – Secrets & Sensitive Data Handling
+    body: |
+      ## 🎯 Objective
+      Secure credentials and PII per docs/microservice/step-09-secrets.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Store secrets in managed vaults and inject at runtime (never committed).
+      - [ ] Encrypt data at rest/in transit and scrub logs/metrics for PII.
+      - [ ] Rotate CI/CD and runtime secrets with documented ownership.
+
+      ## 📚 Reference
+      - docs/microservice/step-09-secrets.md
+    labels: [microservice:secrets, priority:now]
+    milestone: Step 09 – Secrets & Sensitive Data Handling
+    fields:
+      Readiness Stage: Automation & Quality
+      Discipline: Secrets
+      Risk Level: High
+      Docs Link: docs/microservice/step-09-secrets.md
+  - title: Step 10 – Observability
+    body: |
+      ## 🎯 Objective
+      Instrument logs, metrics, and traces according to docs/microservice/step-10-observability.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Emit structured JSON logs with correlation IDs.
+      - [ ] Instrument Prometheus metrics and expose `/metrics`.
+      - [ ] Integrate OpenTelemetry tracing and build dashboards + alerts.
+
+      ## 📚 Reference
+      - docs/microservice/step-10-observability.md
+    labels: [microservice:observability, priority:now]
+    milestone: Step 10 – Observability (Logging, Metrics, Tracing)
+    fields:
+      Readiness Stage: Operational Hardening
+      Discipline: Operations
+      Risk Level: High
+      Docs Link: docs/microservice/step-10-observability.md
+  - title: Step 11 – Health Checks & Readiness Probes
+    body: |
+      ## 🎯 Objective
+      Provide precise health signals and graceful shutdown per docs/microservice/step-11-health-checks.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Implement `/livez` and `/readyz` endpoints (or gRPC health) with dependency checks.
+      - [ ] Configure orchestrator probes and monitor failures.
+      - [ ] Handle SIGTERM/SIGINT gracefully to drain traffic before exit.
+
+      ## 📚 Reference
+      - docs/microservice/step-11-health-checks.md
+    labels: [microservice:health, priority:now]
+    milestone: Step 11 – Health Checks & Readiness Probes
+    fields:
+      Readiness Stage: Operational Hardening
+      Discipline: Operations
+      Risk Level: Medium
+      Docs Link: docs/microservice/step-11-health-checks.md
+  - title: Step 12 – Rate Limiting, Retries, and Backoff
+    body: |
+      ## 🎯 Objective
+      Implement resiliency patterns listed in docs/microservice/step-12-resiliency.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Add timeouts to every outbound call; use retries with exponential backoff + jitter.
+      - [ ] Configure circuit breakers and inbound/outbound rate limits.
+      - [ ] Test degradation scenarios (slow dependencies, errors, saturation) and record outcomes.
+
+      ## 📚 Reference
+      - docs/microservice/step-12-resiliency.md
+    labels: [microservice:resiliency, priority:now]
+    milestone: Step 12 – Rate Limiting, Retries, and Backoff
+    fields:
+      Readiness Stage: Operational Hardening
+      Discipline: Operations
+      Risk Level: High
+      Docs Link: docs/microservice/step-12-resiliency.md
+  - title: Step 13 – Fault Tolerance & Graceful Degradation
+    body: |
+      ## 🎯 Objective
+      Ensure redundancy, fallbacks, and chaos testing per docs/microservice/step-13-fault-tolerance.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Define failure responses/fallbacks for each dependency.
+      - [ ] Deploy across multiple instances/AZs with replicated data stores.
+      - [ ] Run chaos experiments and capture learnings in runbooks.
+
+      ## 📚 Reference
+      - docs/microservice/step-13-fault-tolerance.md
+    labels: [microservice:fault-tolerance, priority:now]
+    milestone: Step 13 – Fault Tolerance & Graceful Degradation
+    fields:
+      Readiness Stage: Operational Hardening
+      Discipline: Operations
+      Risk Level: High
+      Docs Link: docs/microservice/step-13-fault-tolerance.md
+  - title: Step 14 – Deployment Strategies & Containerization
+    body: |
+      ## 🎯 Objective
+      Containerize the service and adopt safe rollout strategies from docs/microservice/step-14-deployment.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Build a slim, non-root Docker image and scan it for CVEs.
+      - [ ] Version infrastructure manifests and automate blue/green, canary, or rolling deploys.
+      - [ ] Add post-deploy smoke tests and automated rollback triggers.
+
+      ## 📚 Reference
+      - docs/microservice/step-14-deployment.md
+    labels: [microservice:deployment, priority:now]
+    milestone: Step 14 – Deployment Strategies & Containerization
+    fields:
+      Readiness Stage: Operational Hardening
+      Discipline: Operations
+      Risk Level: Medium
+      Docs Link: docs/microservice/step-14-deployment.md
+  - title: Step 15 – Documentation & Runbooks
+    body: |
+      ## 🎯 Objective
+      Publish complete documentation, onboarding guides, and runbooks (docs/microservice/step-15-documentation.md).
+
+      ## ✅ Acceptance Criteria
+      - [ ] Update README + architecture diagrams + dependency tables.
+      - [ ] Publish API docs and onboarding instructions.
+      - [ ] Author/refresh runbooks and register the service in the catalog.
+
+      ## 📚 Reference
+      - docs/microservice/step-15-documentation.md
+    labels: [microservice:docs, priority:now]
+    milestone: Step 15 – Documentation & Runbooks
+    fields:
+      Readiness Stage: On-Call & Compliance
+      Discipline: Documentation
+      Risk Level: Medium
+      Docs Link: docs/microservice/step-15-documentation.md
+  - title: Step 16 – Incident Response & On-Call Readiness
+    body: |
+      ## 🎯 Objective
+      Stand up on-call policies, alerts, and playbooks per docs/microservice/step-16-incident-response.md.
+
+      ## ✅ Acceptance Criteria
+      - [ ] Publish on-call rotation, escalation paths, and tool access.
+      - [ ] Tune alerts for actionability and document remediation steps.
+      - [ ] Run game days/fire drills and capture learnings via post-mortems.
+
+      ## 📚 Reference
+      - docs/microservice/step-16-incident-response.md
+    labels: [microservice:incident, priority:now]
+    milestone: Step 16 – Incident Response & On-Call Readiness
+    fields:
+      Readiness Stage: On-Call & Compliance
+      Discipline: Incident Response
+      Risk Level: High
+      Docs Link: docs/microservice/step-16-incident-response.md
+  - title: Step 17 – Compliance & Production-Readiness Standards
+    body: |
+      ## 🎯 Objective
+      Complete production readiness, compliance, and capacity reviews (docs/microservice/step-17-compliance.md).
+
+      ## ✅ Acceptance Criteria
+      - [ ] Pass production-readiness/security/privacy reviews; record exceptions.
+      - [ ] Finish capacity planning and schedule recurring architecture reviews.
+      - [ ] Automate compliance gates (policy-as-code, coverage thresholds) in CI/CD.
+
+      ## 📚 Reference
+      - docs/microservice/step-17-compliance.md
+    labels: [microservice:compliance, priority:now]
+    milestone: Step 17 – Compliance & Production-Readiness Standards
+    fields:
+      Readiness Stage: On-Call & Compliance
+      Discipline: Compliance
+      Risk Level: High
+      Docs Link: docs/microservice/step-17-compliance.md

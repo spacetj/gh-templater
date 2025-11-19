@@ -1,0 +1,36 @@
+name: E2E Smoke Template
+project:
+  readme: |
+    # E2E Smoke Template
+
+    This minimal template powers the automated end-to-end test. It only creates a
+    GitHub Project with documentation so the test can create and delete real
+    resources. It now includes a placeholder milestone and issue so end-to-end
+    coverage exercises the full pipeline.
+  fields:
+    - name: Smoke Run ID
+      data_type: TEXT
+      description: Identifier for the automated test invocation
+
+labels:
+  - name: smoke-test
+    color: 95A5A6
+    description: Tag added to resources created by automated tests
+
+milestones:
+  - title: Smoke Cycle
+    description: Placeholder milestone used for automated tests
+issues:
+  - title: Smoke Issue
+    body: |
+      This issue exists so the end-to-end test can verify template-driven issue creation,
+      label assignments, and milestone wiring without affecting real projects.
+
+      ## Checklist
+      - [ ] Created via template
+      - [ ] Added to project in E2E test
+      - [ ] Cleaned up after test completion
+    labels: [smoke-test]
+    milestone: Smoke Cycle
+    fields:
+      Smoke Run ID: gh-templater-e2e-run

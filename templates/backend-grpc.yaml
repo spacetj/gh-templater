@@ -1,0 +1,240 @@
+name: Backend gRPC Service
+project:
+  readme: |
+    # Backend gRPC Service Template
+
+    This template bootstraps a production-grade Go microservice using gRPC. It assumes
+    GitHub Actions for CI, Terraform for infrastructure as code, and Kubernetes for runtime orchestration.
+
+    ## Included milestones
+    - Architecture & repo readiness
+    - Service implementation
+    - Observability and operations
+
+    ## Useful docs
+    - Go modules: https://go.dev/doc/modules
+    - gRPC in Go: https://grpc.io/docs/languages/go/basics/
+    - GitHub Actions: https://docs.github.com/actions
+    - SRE golden signals: https://sre.google/sre-book/monitoring-distributed-systems/
+
+    ## Expected outcomes
+    - CI/CD pipelines with linting, unit tests, contract tests, and container builds
+    - Production-ready telemetry (metrics, tracing, structured logging)
+    - Hardened runtime with SLOs, runbooks, and dashboards
+  fields:
+    - name: Priority
+      data_type: SINGLE_SELECT
+      description: Communicates urgency
+      options:
+        - name: High
+          color: RED
+        - name: Medium
+          color: YELLOW
+        - name: Low
+          color: GREEN
+    - name: Work Type
+      data_type: SINGLE_SELECT
+      description: Tracks the type of contribution
+      options:
+        - name: Feature
+          color: GREEN
+        - name: Infrastructure
+          color: BLUE
+        - name: Reliability
+          color: ORANGE
+        - name: Documentation
+          color: PURPLE
+    - name: Spec Link
+      data_type: TEXT
+      description: Pointer to the canonical doc/spec for the task
+
+labels:
+  - name: design
+    color: F5B041
+    description: Product design or UX work
+  - name: backend
+    color: 1D6F93
+    description: Backend implementation tasks
+  - name: setup
+    color: 566573
+    description: Repository and tooling setup
+  - name: grpc
+    color: 4A90E2
+    description: gRPC-specific implementation
+  - name: database
+    color: 27AE60
+    description: Data layer and persistence work
+  - name: ci
+    color: D35400
+    description: Continuous integration and delivery
+  - name: release
+    color: 8E44AD
+    description: Release management tasks
+  - name: observability
+    color: 16A085
+    description: Telemetry and monitoring
+  - name: sre
+    color: 2C3E50
+    description: Reliability and operations
+  - name: reliability
+    color: C0392B
+    description: Reliability and incident readiness
+
+milestones:
+  - title: Architecture & Bootstrap
+    description: Establish service contracts, repo layout, and local developer flow.
+    due_on: 2024-12-15
+  - title: Core Service Delivery
+    description: Implement the gRPC API, persistence, and release automation.
+    due_on: 2025-01-15
+  - title: Observability & Operations
+    description: Add SLIs/SLOs, dashboards, alerting, and operational runbooks.
+    due_on: 2025-02-01
+
+issues:
+  - title: Define protobuf contracts and API guidelines
+    body: |
+      - Draft the initial `.proto` files with request/response validation notes.
+      - Document backward-compatible release rules and versioning.
+      - Add buf or clang-format linting for protobuf definitions.
+      - Link to design doc and capture review approvals.
+    labels: [design, backend]
+    milestone: Architecture & Bootstrap
+    fields:
+      Priority: High
+      Work Type: Feature
+      Spec Link: docs/backend/specs/protobuf-contracts.md
+    doc:
+      source: docs/backend/specs/protobuf-contracts.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/protobuf-contracts.md
+      purpose: Align on service boundaries, naming, and compatibility guarantees.
+      key_activities:
+        - Draft proto definitions and review with stakeholders
+        - Capture release versioning rules
+        - Validate lint/config tooling choices
+
+  - title: Establish Go module and repo scaffolding
+    body: |
+      - Initialize `go.mod` with proper module path.
+      - Add `cmd/<service>` entrypoint, `internal/` for business logic, and `pkg/` for reusable clients.
+      - Wire up `make lint test` with golangci-lint and unit tests.
+      - Configure pre-commit hooks for formatting and static analysis.
+    labels: [setup, backend]
+    milestone: Architecture & Bootstrap
+    fields:
+      Priority: High
+      Work Type: Infrastructure
+      Spec Link: docs/backend/specs/repo-structure.md
+    doc:
+      source: docs/backend/specs/repo-structure.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/repo-structure.md
+      purpose: Provide a reproducible developer experience and baseline tooling.
+      key_activities:
+        - Lock repo layout and module boundaries
+        - Configure lint/test automation
+        - Document bootstrap commands for contributors
+
+  - title: Implement gRPC server with health and readiness
+    body: |
+      - Generate gRPC stubs from protobufs.
+      - Expose health/readiness endpoints using gRPC health protocol.
+      - Add integration tests using a real server bound to an ephemeral port.
+      - Document local development commands in README.
+    labels: [backend, grpc]
+    milestone: Core Service Delivery
+    fields:
+      Priority: High
+      Work Type: Feature
+      Spec Link: docs/backend/specs/grpc-server.md
+    doc:
+      source: docs/backend/specs/grpc-server.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/grpc-server.md
+      purpose: Stand up the gRPC server, generated code, and health probes.
+      key_activities:
+        - Wire generated stubs and server implementation
+        - Add readiness/liveness via gRPC health protocol
+        - Document local run/debug commands
+
+  - title: Add persistence layer and migrations
+    body: |
+      - Select datastore (e.g., Postgres) and document rationale.
+      - Implement repository interfaces with context-aware operations.
+      - Add database migrations via `golang-migrate` and wire into CI.
+      - Provide seed data for local development.
+    labels: [database, backend]
+    milestone: Core Service Delivery
+    fields:
+      Priority: Medium
+      Work Type: Infrastructure
+      Spec Link: docs/backend/specs/persistence.md
+    doc:
+      source: docs/backend/specs/persistence.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/persistence.md
+      purpose: Provide durable storage, migrations, and local dev experience.
+      key_activities:
+        - Decide on datastore and schema strategy
+        - Add migration tooling and CI integration
+        - Seed fixtures for local development
+
+  - title: Harden CI/CD and release automation
+    body: |
+      - Add GitHub Actions workflows for lint, test, and Docker build.
+      - Publish images to the chosen registry with semantic version tags.
+      - Gate merges on status checks and vulnerability scans.
+      - Provide release playbook and rollback checklist.
+    labels: [ci, release]
+    milestone: Core Service Delivery
+    fields:
+      Priority: Medium
+      Work Type: Infrastructure
+      Spec Link: docs/backend/specs/cicd.md
+    doc:
+      source: docs/backend/specs/cicd.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/cicd.md
+      purpose: Guarantee reliable builds, scans, and delivery pipelines.
+      key_activities:
+        - Author CI workflows and container build steps
+        - Enforce gating via checks and scan policies
+        - Document release and rollback plan
+
+  - title: Add observability (metrics, tracing, logging)
+    body: |
+      - Integrate OpenTelemetry SDK with exporters for metrics and traces.
+      - Define golden signals and expose Prometheus metrics endpoint.
+      - Implement structured logging with correlation IDs.
+      - Add documentation for configuring collectors in staging and prod.
+    labels: [observability, sre]
+    milestone: Observability & Operations
+    fields:
+      Priority: Medium
+      Work Type: Reliability
+      Spec Link: docs/backend/specs/observability.md
+    doc:
+      source: docs/backend/specs/observability.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/observability.md
+      purpose: Deliver metrics, tracing, and logging required for SLOs.
+      key_activities:
+        - Integrate OpenTelemetry exporters
+        - Define golden signals and alerts
+        - Document collector configuration
+
+  - title: Define SLOs, dashboards, and alerts
+    body: |
+      - Draft SLIs and target SLOs for latency, availability, and error rates.
+      - Create Grafana dashboards and link in README.
+      - Configure alert policies and escalation paths.
+      - Add runbook with remediation steps and incident templates.
+    labels: [sre, reliability]
+    milestone: Observability & Operations
+    fields:
+      Priority: Medium
+      Work Type: Reliability
+      Spec Link: docs/backend/specs/slo.md
+    doc:
+      source: docs/backend/specs/slo.md
+      link: https://github.com/your-org/gh-templater/blob/main/docs/backend/specs/slo.md
+      purpose: Publish reliability targets and operational runbooks.
+      key_activities:
+        - Author SLOs/SLIs and dashboards
+        - Configure alert routing
+        - Capture incident response playbooks
