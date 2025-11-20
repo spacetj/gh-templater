@@ -1,9 +1,11 @@
 package apply
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/github/gh-templater/internal/github"
@@ -320,13 +322,13 @@ func TestApplyIssueFieldsValidation(t *testing.T) {
 	fields := map[string]github.ProjectField{
 		"Spec": {ID: "f1", Name: "Spec", DataType: "TEXT", Options: map[string]github.ProjectFieldOption{}},
 	}
-	if err := applyIssueFields(map[string]string{"unknown": "foo"}, "proj", "item", fields, client); err == nil {
+	if err := applyIssueFields(map[string]string{"unknown": "foo"}, "Demo", "Work", "proj", "item", fields, client, newStepRunner(false, nil)); err == nil {
 		t.Fatalf("expected error for missing field metadata")
 	}
-	if err := applyIssueFields(map[string]string{"Spec": "ready"}, "proj", "item", nil, client); err == nil {
+	if err := applyIssueFields(map[string]string{"Spec": "ready"}, "Demo", "Work", "proj", "item", nil, client, newStepRunner(false, nil)); err == nil {
 		t.Fatalf("expected error when no project fields available")
 	}
-	if err := applyIssueFields(map[string]string{"Spec": "ready"}, "proj", "item", fields, client); err != nil {
+	if err := applyIssueFields(map[string]string{"Spec": "ready"}, "Demo", "Work", "proj", "item", fields, client, newStepRunner(false, nil)); err != nil {
 		t.Fatalf("unexpected error applying field: %v", err)
 	}
 	if len(client.fieldUpdates) != 1 {
@@ -402,6 +404,68 @@ func TestDeleteLabels(t *testing.T) {
 	}
 	if len(client.deletedLabels) != 1 || client.deletedLabels[0] != "acme/repo:smoke-test" {
 		t.Fatalf("expected label deletion, got %+v", client.deletedLabels)
+	}
+}
+
+func TestApplyDryRunSkipsMutations(t *testing.T) {
+	tplPath := t.TempDir() + "/template.yaml"
+	content := `name: Demo
+project:
+  readme: README
+  fields:
+    - name: Status
+      data_type: TEXT
+labels:
+  - name: docs
+    color: "#abcdef"
+milestones:
+  - title: Kickoff
+issues:
+  - title: First
+    body: Ready
+    milestone: Kickoff
+    fields:
+      Status: Ready
+`
+	writeFile(tplPath, content, t)
+	client := &fakeClient{}
+	var buf bytes.Buffer
+	opts := Options{Org: "acme", ProjectName: "Demo", IssuesRepo: "acme/repo", Template: tplPath, DryRun: true, DryRunWriter: &buf}
+	if err := Apply(opts, client); err != nil {
+		t.Fatalf("apply returned error: %v", err)
+	}
+	if len(client.labels) != 0 || len(client.createdIssues) != 0 || len(client.milestones) != 0 {
+		t.Fatalf("dry run should not call client operations")
+	}
+	output := buf.String()
+	for _, expected := range []string{"Create project", "Ensure label", "Create milestone", "Create issue", "Set project field"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected dry-run output to mention %q, got %q", expected, output)
+		}
+	}
+}
+
+func TestDeleteDryRunSkipsMutations(t *testing.T) {
+	tplPath := t.TempDir() + "/template.yaml"
+	content := `labels:
+  - name: remove-me
+milestones:
+  - title: Alpha
+issues:
+  - title: Cleanup
+`
+	writeFile(tplPath, content, t)
+	client := &fakeClient{}
+	var buf bytes.Buffer
+	opts := DeleteOptions{Org: "acme", ProjectName: "Demo", IssuesRepo: "acme/repo", Template: tplPath, Sections: Sections{Project: true, Issues: true, Milestones: true, Labels: true}, DryRun: true, DryRunWriter: &buf}
+	if err := Delete(opts, client); err != nil {
+		t.Fatalf("delete returned error: %v", err)
+	}
+	if len(client.deletedLabels) != 0 || len(client.deletedIssues) != 0 || len(client.deletedMilestones) != 0 || len(client.deletedProjects) != 0 {
+		t.Fatalf("dry run should not delete resources")
+	}
+	if !strings.Contains(buf.String(), "Delete project") {
+		t.Fatalf("expected dry-run output to mention project deletion, got %q", buf.String())
 	}
 }
 
