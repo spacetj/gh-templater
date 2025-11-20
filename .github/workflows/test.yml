@@ -45,7 +45,7 @@ jobs:
       - name: Run E2E tests
         env:
           GH_TEMPLATER_TOKEN: ${{ secrets.GH_TEMPLATER_TOKEN }}
-        run: go test ./internal/e2e -run TestApplyTemplateE2E -count=1
+        run: go test ./internal/e2e -count=1
 
       - name: Cleanup E2E artifacts
         if: always()
