@@ -59,4 +59,8 @@ jobs:
           export GH_TOKEN="${GH_TEMPLATER_TOKEN}"
           export GITHUB_TOKEN="${GH_TEMPLATER_TOKEN}"
           gh extension install . >/dev/null 2>&1 || gh extension upgrade gh-templater >/dev/null 2>&1 || true
-          gh templater delete --org spacetj --project "${GH_TEMPLATER_E2E_PROJECT}" --issues-repo spacetj/gh-templater --template templates/e2e-smoke.yaml || true
+          gh templater delete \
+            --org spacetj \
+            --project "${GH_TEMPLATER_E2E_PROJECT}" \
+            --issues-repo spacetj/gh-templater \
+            --template templates/e2e-smoke.yaml || true
