@@ -54,6 +54,8 @@ gh templater apply \
   --sections labels,issues
 ```
 
+Need to sanity-check a template before mutating anything? Append `--dry-run` to `gh templater apply` or `gh templater delete` to preview the entire plan. The CLI prints each step (ensuring labels, creating milestones and issues, setting project fields, deleting resources, etc.) without calling the GitHub API so you can validate the workflow before running it for real.
+
 The command will:
 - 🚧 Create or update a GitHub Project (Projects v2) under the org you specify (when `project` is selected).
 - 🏷️ Ensure repo labels match the template (when `labels` is selected).

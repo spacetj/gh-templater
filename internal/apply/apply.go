@@ -2,6 +2,7 @@ package apply
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -61,11 +62,13 @@ func (s Sections) anyEnabled() bool {
 
 // Options describe inputs provided via CLI flags.
 type Options struct {
-	Org         string
-	ProjectName string
-	IssuesRepo  string
-	Template    string
-	Sections    Sections
+	Org          string
+	ProjectName  string
+	IssuesRepo   string
+	Template     string
+	Sections     Sections
+	DryRun       bool
+	DryRunWriter io.Writer
 }
 
 // Apply executes the project bootstrapping flow.
@@ -74,6 +77,7 @@ func Apply(opts Options, client github.Client) error {
 	if !sections.anyEnabled() {
 		sections = DefaultSections()
 	}
+	runner := newStepRunner(opts.DryRun, opts.DryRunWriter)
 
 	tpl, err := template.Load(opts.Template)
 	if err != nil {
@@ -87,7 +91,11 @@ func Apply(opts Options, client github.Client) error {
 
 	if sections.Labels {
 		for _, label := range tpl.Labels {
-			if err := client.EnsureLabel(opts.IssuesRepo, label.Name, label.Color, label.Description); err != nil {
+			lbl := label
+			description := fmt.Sprintf("Ensure label %q in %s", lbl.Name, opts.IssuesRepo)
+			if err := runner.Run(description, func() error {
+				return client.EnsureLabel(opts.IssuesRepo, lbl.Name, lbl.Color, lbl.Description)
+			}); err != nil {
 				return err
 			}
 		}
@@ -96,19 +104,40 @@ func Apply(opts Options, client github.Client) error {
 	var project github.ProjectInfo
 	var projectFields map[string]github.ProjectField
 	if sections.Project {
-		project, err = client.CreateProject(opts.Org, opts.ProjectName)
-		if err != nil {
-			return fmt.Errorf("create project: %w", err)
+		description := fmt.Sprintf("Create project %q under %s", opts.ProjectName, opts.Org)
+		if err := runner.Run(description, func() error {
+			var err error
+			project, err = client.CreateProject(opts.Org, opts.ProjectName)
+			if err != nil {
+				return fmt.Errorf("create project: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return err
 		}
 
-		if err := client.UpdateProjectReadme(project.ID, projectConfig.Readme); err != nil {
+		if err := runner.Run(fmt.Sprintf("Update README for project %q", opts.ProjectName), func() error {
+			if err := client.UpdateProjectReadme(project.ID, projectConfig.Readme); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
 
 		fieldTemplates := convertFieldTemplates(projectConfig.Fields)
-		projectFields, err = client.EnsureProjectFields(project.ID, fieldTemplates)
-		if err != nil {
-			return fmt.Errorf("ensure project fields: %w", err)
+		if err := runner.Run(fmt.Sprintf("Ensure project fields for %q", opts.ProjectName), func() error {
+			var err error
+			projectFields, err = client.EnsureProjectFields(project.ID, fieldTemplates)
+			if err != nil {
+				return fmt.Errorf("ensure project fields: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		if opts.DryRun {
+			projectFields = simulateProjectFieldMetadata(fieldTemplates)
 		}
 	}
 
@@ -118,7 +147,11 @@ func Apply(opts Options, client github.Client) error {
 		if !sections.Milestones {
 			continue
 		}
-		if err := client.CreateMilestone(opts.IssuesRepo, m.Title, m.Description, m.DueOn); err != nil {
+		milestone := m
+		description := fmt.Sprintf("Create milestone %q in %s", milestone.Title, opts.IssuesRepo)
+		if err := runner.Run(description, func() error {
+			return client.CreateMilestone(opts.IssuesRepo, milestone.Title, milestone.Description, milestone.DueOn)
+		}); err != nil {
 			return err
 		}
 	}
@@ -140,18 +173,33 @@ func Apply(opts Options, client github.Client) error {
 				Assignees: issue.Assignees,
 			}
 
-			url, err := client.CreateIssue(opts.IssuesRepo, issueInput)
-			if err != nil {
+			var issueURL string
+			description := fmt.Sprintf("Create issue %q in %s", issue.Title, opts.IssuesRepo)
+			if err := runner.Run(description, func() error {
+				var err error
+				issueURL, err = client.CreateIssue(opts.IssuesRepo, issueInput)
+				if err != nil {
+					return err
+				}
+				return nil
+			}); err != nil {
 				return err
 			}
 
 			if sections.Project {
-				itemID, err := client.AddItemToProject(opts.Org, project.Number, url)
-				if err != nil {
+				var itemID string
+				if err := runner.Run(fmt.Sprintf("Add issue %q to project %q", issue.Title, opts.ProjectName), func() error {
+					var err error
+					itemID, err = client.AddItemToProject(opts.Org, project.Number, issueURL)
+					if err != nil {
+						return err
+					}
+					return nil
+				}); err != nil {
 					return err
 				}
 				if len(issue.Fields) > 0 {
-					if err := applyIssueFields(issue.Fields, project.ID, itemID, projectFields, client); err != nil {
+					if err := applyIssueFields(issue.Fields, opts.ProjectName, issue.Title, project.ID, itemID, projectFields, client, runner); err != nil {
 						return err
 					}
 				}
@@ -159,7 +207,7 @@ func Apply(opts Options, client github.Client) error {
 		}
 	}
 
-	if sections.Project {
+	if sections.Project && !opts.DryRun {
 		fmt.Printf("Project created: %s\n", project.URL)
 	}
 	return nil
@@ -177,6 +225,23 @@ func convertFieldTemplates(fields []template.TemplateField) []github.FieldTempla
 			ft.Options = append(ft.Options, github.FieldOption{Name: opt.Name, Color: opt.Color, Description: opt.Description})
 		}
 		result = append(result, ft)
+	}
+	return result
+}
+
+func simulateProjectFieldMetadata(fields []github.FieldTemplate) map[string]github.ProjectField {
+	result := make(map[string]github.ProjectField, len(fields))
+	for idx, field := range fields {
+		options := make(map[string]github.ProjectFieldOption, len(field.Options))
+		for _, opt := range field.Options {
+			options[opt.Name] = github.ProjectFieldOption{ID: fmt.Sprintf("dry-run-field-%d-option-%s", idx, opt.Name), Name: opt.Name}
+		}
+		result[field.Name] = github.ProjectField{
+			ID:       fmt.Sprintf("dry-run-field-%d", idx),
+			Name:     field.Name,
+			DataType: field.DataType,
+			Options:  options,
+		}
 	}
 	return result
 }
@@ -216,7 +281,7 @@ func composeIssueBody(issue template.TemplateIssue) string {
 	return builder.String()
 }
 
-func applyIssueFields(fieldValues map[string]string, projectID, itemID string, projectFields map[string]github.ProjectField, client github.Client) error {
+func applyIssueFields(fieldValues map[string]string, projectName, issueTitle, projectID, itemID string, projectFields map[string]github.ProjectField, client github.Client, runner stepRunner) error {
 	if len(fieldValues) == 0 {
 		return nil
 	}
@@ -232,7 +297,10 @@ func applyIssueFields(fieldValues map[string]string, projectID, itemID string, p
 		if err != nil {
 			return fmt.Errorf("set field %s: %w", name, err)
 		}
-		if err := client.UpdateProjectItemField(projectID, itemID, meta.ID, payload); err != nil {
+		description := fmt.Sprintf("Set project field %q on issue %q in project %q", name, issueTitle, projectName)
+		if err := runner.Run(description, func() error {
+			return client.UpdateProjectItemField(projectID, itemID, meta.ID, payload)
+		}); err != nil {
 			return err
 		}
 	}

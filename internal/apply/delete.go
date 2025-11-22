@@ -3,6 +3,7 @@ package apply
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/github/gh-templater/internal/github"
@@ -11,11 +12,13 @@ import (
 
 // DeleteOptions capture inputs for removing template resources.
 type DeleteOptions struct {
-	Org         string
-	ProjectName string
-	IssuesRepo  string
-	Template    string
-	Sections    Sections
+	Org          string
+	ProjectName  string
+	IssuesRepo   string
+	Template     string
+	Sections     Sections
+	DryRun       bool
+	DryRunWriter io.Writer
 }
 
 // Delete removes template-driven resources (project, milestones, issues).
@@ -24,6 +27,7 @@ func Delete(opts DeleteOptions, client github.Client) error {
 	if !sections.anyEnabled() {
 		sections = DefaultSections()
 	}
+	runner := newStepRunner(opts.DryRun, opts.DryRunWriter)
 
 	org := strings.TrimSpace(opts.Org)
 	projectName := strings.TrimSpace(opts.ProjectName)
@@ -47,85 +51,108 @@ func Delete(opts DeleteOptions, client github.Client) error {
 	}
 
 	if sections.Issues && len(tpl.Issues) > 0 {
-		if err := deleteIssues(issuesRepo, tpl.Issues, client); err != nil {
+		if err := deleteIssues(issuesRepo, tpl.Issues, client, runner); err != nil {
 			return err
 		}
 	}
 	if sections.Milestones && len(tpl.Milestones) > 0 {
-		if err := deleteMilestones(issuesRepo, tpl.Milestones, client); err != nil {
+		if err := deleteMilestones(issuesRepo, tpl.Milestones, client, runner); err != nil {
 			return err
 		}
 	}
 	if sections.Labels && len(tpl.Labels) > 0 {
-		if err := deleteLabels(issuesRepo, tpl.Labels, client); err != nil {
+		if err := deleteLabels(issuesRepo, tpl.Labels, client, runner); err != nil {
 			return err
 		}
 	}
 	if sections.Project {
-		if err := deleteProject(org, projectName, client); err != nil {
+		if err := deleteProject(org, projectName, client, runner); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func deleteProject(org, projectName string, client github.Client) error {
+func deleteProject(org, projectName string, client github.Client, runner stepRunner) error {
 	org = strings.TrimSpace(org)
 	projectName = strings.TrimSpace(projectName)
 	if org == "" || projectName == "" {
 		return fmt.Errorf("both --org and --project are required")
 	}
-	project, err := client.FindProject(org, projectName)
-	if err != nil {
-		if errors.Is(err, github.ErrProjectNotFound) {
+	var project github.ProjectInfo
+	if err := runner.Run(fmt.Sprintf("Delete project %q under %s", projectName, org), func() error {
+		var err error
+		project, err = client.FindProject(org, projectName)
+		if err != nil {
+			if errors.Is(err, github.ErrProjectNotFound) {
+				fmt.Printf("Project %q not found under %s; skipping delete\n", projectName, org)
+				return nil
+			}
+			return err
+		}
+		if project.ID == "" {
 			fmt.Printf("Project %q not found under %s; skipping delete\n", projectName, org)
 			return nil
 		}
-		return err
-	}
-	if project.ID == "" {
-		fmt.Printf("Project %q not found under %s; skipping delete\n", projectName, org)
+		if err := client.DeleteProject(project.ID); err != nil {
+			return err
+		}
 		return nil
-	}
-	if err := client.DeleteProject(project.ID); err != nil {
+	}); err != nil {
 		return err
 	}
-	fmt.Printf("Project deleted: %s\n", project.URL)
+	if project.ID != "" && !runner.IsDryRun() {
+		fmt.Printf("Project deleted: %s\n", project.URL)
+	}
 	return nil
 }
 
-func deleteMilestones(repo string, milestones []template.TemplateMilestone, client github.Client) error {
+func deleteMilestones(repo string, milestones []template.TemplateMilestone, client github.Client, runner stepRunner) error {
 	for _, m := range milestones {
-		info, err := client.FindMilestone(repo, m.Title)
-		if err != nil {
-			if errors.Is(err, github.ErrMilestoneNotFound) {
-				continue
+		milestone := m
+		description := fmt.Sprintf("Delete milestone %q from %s", milestone.Title, repo)
+		if err := runner.Run(description, func() error {
+			info, err := client.FindMilestone(repo, milestone.Title)
+			if err != nil {
+				if errors.Is(err, github.ErrMilestoneNotFound) {
+					return nil
+				}
+				return err
 			}
-			return err
-		}
-		if err := client.DeleteMilestone(repo, info.Number); err != nil {
+			if err := client.DeleteMilestone(repo, info.Number); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func deleteIssues(repo string, issues []template.TemplateIssue, client github.Client) error {
+func deleteIssues(repo string, issues []template.TemplateIssue, client github.Client, runner stepRunner) error {
 	for _, issue := range issues {
-		matches, err := client.FindIssues(repo, issue.Title)
-		if err != nil {
+		current := issue
+		description := fmt.Sprintf("Delete issues titled %q in %s", current.Title, repo)
+		if err := runner.Run(description, func() error {
+			matches, err := client.FindIssues(repo, current.Title)
+			if err != nil {
+				return err
+			}
+			for _, match := range matches {
+				if current.Milestone != "" && !strings.EqualFold(current.Milestone, match.Milestone) {
+					continue
+				}
+				if len(current.Labels) > 0 && !containsAll(match.Labels, current.Labels) {
+					continue
+				}
+				if err := client.DeleteIssue(match.ID); err != nil {
+					return fmt.Errorf("delete issue %q: %w", match.Title, err)
+				}
+			}
+			return nil
+		}); err != nil {
 			return err
-		}
-		for _, match := range matches {
-			if issue.Milestone != "" && !strings.EqualFold(issue.Milestone, match.Milestone) {
-				continue
-			}
-			if len(issue.Labels) > 0 && !containsAll(match.Labels, issue.Labels) {
-				continue
-			}
-			if err := client.DeleteIssue(match.ID); err != nil {
-				return fmt.Errorf("delete issue %q: %w", match.Title, err)
-			}
 		}
 	}
 	return nil
@@ -147,12 +174,16 @@ func containsAll(haystack []string, needles []string) bool {
 	return true
 }
 
-func deleteLabels(repo string, labels []template.TemplateLabel, client github.Client) error {
+func deleteLabels(repo string, labels []template.TemplateLabel, client github.Client, runner stepRunner) error {
 	for _, label := range labels {
 		if strings.TrimSpace(label.Name) == "" {
 			continue
 		}
-		if err := client.DeleteLabel(repo, label.Name); err != nil {
+		lbl := label
+		description := fmt.Sprintf("Delete label %q from %s", lbl.Name, repo)
+		if err := runner.Run(description, func() error {
+			return client.DeleteLabel(repo, lbl.Name)
+		}); err != nil {
 			return err
 		}
 	}

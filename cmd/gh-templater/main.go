@@ -35,6 +35,7 @@ func applyCmd(args []string) {
 	issuesRepo := fs.String("issues-repo", "", "owner/repo that will receive milestones and issues")
 	templatePath := fs.String("template", "", "Path to the YAML template to apply")
 	sectionsFlag := fs.String("sections", "all", "Comma-separated sections to apply (project,labels,milestones,issues or 'all')")
+	dryRun := fs.Bool("dry-run", false, "Preview the actions without calling the GitHub API")
 
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -54,7 +55,7 @@ func applyCmd(args []string) {
 	}
 
 	client := github.NewCLIClient(runner.ExecRunner{})
-	opts := apply.Options{Org: *org, ProjectName: *project, IssuesRepo: *issuesRepo, Template: *templatePath, Sections: sections}
+	opts := apply.Options{Org: *org, ProjectName: *project, IssuesRepo: *issuesRepo, Template: *templatePath, Sections: sections, DryRun: *dryRun}
 	if err := apply.Apply(opts, client); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -68,6 +69,7 @@ func deleteCmd(args []string) {
 	issuesRepo := fs.String("issues-repo", "", "owner/repo containing issues and milestones to cleanup")
 	templatePath := fs.String("template", "", "Path to the YAML template describing issues and milestones to delete")
 	sectionsFlag := fs.String("sections", "all", "Comma-separated sections to delete (project,labels,milestones,issues or 'all')")
+	dryRun := fs.Bool("dry-run", false, "Preview the delete actions without calling the GitHub API")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -89,6 +91,7 @@ func deleteCmd(args []string) {
 		IssuesRepo:  *issuesRepo,
 		Template:    *templatePath,
 		Sections:    sections,
+		DryRun:      *dryRun,
 	}
 	if err := apply.Delete(opts, client); err != nil {
 		fmt.Fprintln(os.Stderr, err)

@@ -701,7 +701,11 @@ func (c *CLIClient) runGraphQL(query string, variables map[string]interface{}) (
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(file.Name())
+	defer func() {
+		if removeErr := os.Remove(file.Name()); removeErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to cleanup graphql payload %s: %v\n", file.Name(), removeErr)
+		}
+	}()
 	if _, err := file.Write(data); err != nil {
 		if cerr := file.Close(); cerr != nil {
 			return "", fmt.Errorf("write graphql payload: %v (close error: %w)", err, cerr)
